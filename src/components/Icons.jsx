@@ -53,6 +53,13 @@ export const IconTimeline = () => (
     <circle cx="8" cy="17" r="1.6" fill="currentColor" />
   </S>
 )
+export const IconHelp = () => (
+  <S>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.2 9a2.8 2.8 0 0 1 5.4 1c0 2-2.6 2.5-2.6 4" />
+    <path d="M12 17.5v.01" />
+  </S>
+)
 export const IconShapes = () => (
   <S><rect x="3" y="12" width="9" height="9" rx="1.5" /><circle cx="16.5" cy="7.5" r="4.5" /></S>
 )

@@ -992,6 +992,52 @@ select {
 .shape-palette {
   width: 132px;
 }
+
+/* keyboard shortcuts cheatsheet */
+.shortcuts-pop {
+  position: absolute;
+  left: 60px;
+  bottom: 12px;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--surface-2) 94%, transparent);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(12px);
+}
+.shortcuts-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.shortcuts-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.shortcuts-row kbd {
+  flex: none;
+  min-width: 30px;
+  text-align: center;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--border-2);
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
+}
 .shape-palette .marker-btn {
   border-color: var(--border-2);
 }

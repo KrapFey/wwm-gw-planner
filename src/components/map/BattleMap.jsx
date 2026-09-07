@@ -38,7 +38,8 @@ import {
   IconSquare,
   IconCircle,
   IconTriangle,
-  IconLine
+  IconLine,
+  IconHelp
 } from '../Icons.jsx'
 
 const MIN_ZOOM = 0.1
@@ -51,6 +52,19 @@ const SHAPE_ICON = {
   triangle: IconTriangle,
   line: IconLine
 }
+
+const SHORTCUTS = [
+  ['V', 'Select / pan'],
+  ['D', 'Freehand draw'],
+  ['A', 'Arrow'],
+  ['R', 'Rectangle'],
+  ['C', 'Ellipse'],
+  ['T', 'Triangle'],
+  ['L', 'Line'],
+  ['E', 'Eraser'],
+  ['Del', 'Delete selection'],
+  ['Esc', 'Back to select']
+]
 
 export default function BattleMap() {
   const wrapRef = useRef(null)
@@ -69,6 +83,7 @@ export default function BattleMap() {
   const [draft, setDraft] = useState(null)
   const [markerPalette, setMarkerPalette] = useState(false)
   const [shapePalette, setShapePalette] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [selMarker, setSelMarker] = useState(null)
   const [selDrawing, setSelDrawing] = useState(null)
 
@@ -516,21 +531,21 @@ export default function BattleMap() {
             <button
               className={'dock-btn' + (tool === 'select' ? ' on' : '')}
               onClick={() => setTool('select')}
-              title="Select / pan"
+              title="Select / pan (V)"
             >
               <IconCursor />
             </button>
             <button
               className={'dock-btn' + (tool === 'pen' ? ' on' : '')}
               onClick={() => setTool('pen')}
-              title="Freehand draw"
+              title="Freehand draw (D)"
             >
               <IconPencil />
             </button>
             <button
               className={'dock-btn' + (tool === 'arrow' ? ' on' : '')}
               onClick={() => setTool('arrow')}
-              title="Arrow"
+              title="Arrow (A)"
             >
               <IconArrow />
             </button>
@@ -540,14 +555,14 @@ export default function BattleMap() {
                 setShapePalette((v) => !v)
                 setMarkerPalette(false)
               }}
-              title="Shapes — rectangle, ellipse, triangle, line"
+              title="Shapes — rectangle (R), ellipse (C), triangle (T), line (L)"
             >
               <IconShapes />
             </button>
             <button
               className={'dock-btn' + (tool === 'erase' ? ' on' : '')}
               onClick={() => setTool('erase')}
-              title="Eraser — click or drag over lines to delete"
+              title="Eraser — click or drag over lines to delete (E)"
             >
               <IconEraser />
             </button>
@@ -584,6 +599,27 @@ export default function BattleMap() {
             <button className="dock-btn" onClick={toggleEditLayout} title="Edit map layout">
               <IconLayers />
             </button>
+            <span className="dock-div" />
+            <button
+              className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
+              onClick={() => setShortcutsOpen((v) => !v)}
+              title="Keyboard shortcuts"
+            >
+              <IconHelp />
+            </button>
+          </div>
+        )}
+
+        {/* keyboard shortcuts cheatsheet */}
+        {!editLayout && shortcutsOpen && (
+          <div className="shortcuts-pop">
+            <div className="shortcuts-title">Keyboard shortcuts</div>
+            {SHORTCUTS.map(([key, label]) => (
+              <div className="shortcuts-row" key={key}>
+                <kbd>{key}</kbd>
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
         )}
 
