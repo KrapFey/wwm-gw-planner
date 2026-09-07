@@ -7,6 +7,7 @@ import {
   emptyStrategy,
   migrateStrategy,
   squadColorForIndex,
+  normalizeCategory,
   DEFAULT_SQUAD_SIZE
 } from '../lib/schema'
 import { MAP_W, MAP_H } from '../lib/mapLayout'
@@ -161,7 +162,8 @@ const creator = (set, get) => ({
   // ---- UI state (persisted, not undoable) -------------------------------
   ui: {
     panels: { ally: true, enemy: true },
-    collapsedTeams: {}
+    collapsedTeams: {},
+    collapsedPills: {}
   },
   togglePanel: (side) =>
     set((s) => ({
@@ -172,6 +174,14 @@ const creator = (set, get) => ({
       ui: {
         ...s.ui,
         collapsedTeams: { ...s.ui.collapsedTeams, [id]: !s.ui.collapsedTeams[id] }
+      }
+    })),
+  // Collapse a placed pill on the battle map down to its bare colour disc.
+  togglePillCollapsed: (id) =>
+    set((s) => ({
+      ui: {
+        ...s.ui,
+        collapsedPills: { ...s.ui.collapsedPills, [id]: !s.ui.collapsedPills[id] }
       }
     })),
 
@@ -250,13 +260,13 @@ const creator = (set, get) => ({
   },
 
   // ---- squads ------------------------------------------------------------
-  addSquad: (side, patch = {}) =>
+  addSquad: (side, category = 'attack', patch = {}) =>
     commit(set, get, (s) => {
       const count = s.squads.filter((q) => q.side === side).length
       s.squads.push({
         id: newId('sq'),
         side,
-        name: patch.name ?? `Team ${count + 1}`,
+        category: normalizeCategory(category),
         lane: patch.lane ?? 'Unassigned',
         targetSize: patch.targetSize ?? s.config.defaultSquadSize ?? DEFAULT_SQUAD_SIZE,
         color: patch.color ?? squadColorForIndex(count, side),
@@ -554,8 +564,9 @@ export const useStore = create(
     {
       name: STORAGE_KEY,
       // v3: strategy library. v4: two roster panels. v5: dropped dead
-      // player.name/weapons + squad.leaderId — re-run migrate to strip them.
-      version: 6,
+      // player.name/weapons + squad.leaderId. v7: teams grouped into
+      // Attack/Defence — squad.name dropped, squad.category added.
+      version: 7,
       storage: createJSONStorage(() => appStorage),
       partialize: (state) => ({
         docs: state.docs,
@@ -588,7 +599,8 @@ export const useStore = create(
         const ui = persisted.ui || {}
         persisted.ui = {
           panels: ui.panels || { ally: true, enemy: true },
-          collapsedTeams: ui.collapsedTeams || {}
+          collapsedTeams: ui.collapsedTeams || {},
+          collapsedPills: ui.collapsedPills || {}
         }
         return persisted
       },
@@ -600,7 +612,8 @@ export const useStore = create(
         const ui = (persisted && persisted.ui) || {}
         merged.ui = {
           panels: ui.panels || { ally: true, enemy: true },
-          collapsedTeams: ui.collapsedTeams || {}
+          collapsedTeams: ui.collapsedTeams || {},
+          collapsedPills: ui.collapsedPills || {}
         }
         if (merged.docs?.[merged.activeId]) merged.strategy = merged.docs[merged.activeId]
         return merged

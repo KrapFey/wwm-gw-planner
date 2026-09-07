@@ -108,6 +108,23 @@ describe('team + marker store logic', () => {
     S().togglePanel('enemy')
     expect(S().ui.panels.enemy).toBe(false)
   })
+
+  it('addSquad defaults to the attack category and honours defence', () => {
+    S().addSquad('ally')
+    S().addSquad('ally', 'defence')
+    expect(S().strategy.squads.map((q) => q.category)).toEqual(['attack', 'defence'])
+    expect(S().strategy.squads[0]).not.toHaveProperty('name')
+  })
+
+  it('togglePillCollapsed flips a per-pill UI flag', () => {
+    S().addSquad('ally')
+    const id = S().strategy.squads[0].id
+    expect(S().ui.collapsedPills[id]).toBeFalsy()
+    S().togglePillCollapsed(id)
+    expect(S().ui.collapsedPills[id]).toBe(true)
+    S().togglePillCollapsed(id)
+    expect(S().ui.collapsedPills[id]).toBe(false)
+  })
 })
 
 describe('planning phases', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { squadStats, sideSummary } from './selectors.js'
+import { squadStats, sideSummary, squadLabel, squadOrdinal } from './selectors.js'
 
 const strat = () => ({
   squads: [
@@ -33,6 +33,29 @@ describe('squadStats', () => {
     const st = squadStats(strat(), strat().squads[1])
     expect(st.warnings).toContain('No lane assigned')
     expect(st.over).toBe(false)
+  })
+})
+
+describe('squadLabel / squadOrdinal', () => {
+  const strat = {
+    squads: [
+      { id: 'a1', side: 'ally', category: 'attack' },
+      { id: 'a2', side: 'ally', category: 'attack' },
+      { id: 'd1', side: 'ally', category: 'defence' },
+      { id: 'e1', side: 'enemy', category: 'attack' }
+    ],
+    players: []
+  }
+  it('numbers teams within their own side + category', () => {
+    expect(squadOrdinal(strat, strat.squads[1])).toBe(2)
+    expect(squadOrdinal(strat, strat.squads[2])).toBe(1)
+    expect(squadOrdinal(strat, strat.squads[3])).toBe(1)
+  })
+  it('derives Att / Def names', () => {
+    expect(squadLabel(strat, strat.squads[0])).toBe('Att 1')
+    expect(squadLabel(strat, strat.squads[1])).toBe('Att 2')
+    expect(squadLabel(strat, strat.squads[2])).toBe('Def 1')
+    expect(squadLabel(strat, strat.squads[3])).toBe('Att 1')
   })
 })
 

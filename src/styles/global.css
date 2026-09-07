@@ -564,14 +564,36 @@ select {
 
 .squad > header .name {
   min-width: 0;
-  width: 100%;
-  background: transparent;
-  border-color: transparent;
   font-weight: 600;
   padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.squad > header .name:hover {
-  background: var(--surface-1);
+
+/* ---- team category groups ------------------------------------- */
+.team-cat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.team-cat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.team-cat-head .muted {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.add-team {
+  align-self: flex-start;
 }
 
 .squad > header .controls {

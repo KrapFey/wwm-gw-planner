@@ -1,5 +1,5 @@
 import { useStore } from '../../store/useStore.js'
-import { ROLES, LANES } from '../../lib/schema.js'
+import { ROLES, LANES, CATEGORIES, CATEGORY_META } from '../../lib/schema.js'
 import { sideSummary, ROLE_ICON } from '../../lib/selectors.js'
 import SquadCard from './SquadCard.jsx'
 
@@ -35,19 +35,28 @@ export default function SideColumn({ sideId, meta }) {
           ))}
         </div>
 
-        {squads.map((q) => (
-          <SquadCard key={q.id} squad={q} />
-        ))}
+        {CATEGORIES.map((cat) => {
+          const teams = squads.filter((q) => q.category === cat)
+          return (
+            <div className="team-cat" key={cat}>
+              <div className="team-cat-head">
+                <span>{CATEGORY_META[cat].label}</span>
+                <span className="muted">{teams.length}</span>
+              </div>
 
-        {squads.length === 0 && (
-          <p className="muted" style={{ margin: '4px 2px', fontSize: 12 }}>
-            No teams yet — add one below.
-          </p>
-        )}
+              {teams.map((q) => (
+                <SquadCard key={q.id} squad={q} />
+              ))}
 
-        <div className="row-actions">
-          <button onClick={() => addSquad(sideId)}>+ Team</button>
-        </div>
+              <button
+                className="tiny add-team"
+                onClick={() => addSquad(sideId, cat)}
+              >
+                + {CATEGORY_META[cat].label} team
+              </button>
+            </div>
+          )
+        })}
       </div>
     </section>
   )

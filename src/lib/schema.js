@@ -9,6 +9,20 @@ export const ROLES = ['Tank', 'DPS', 'Healer']
 
 export const LANES = ['Top', 'Mid', 'Bottom']
 
+// Teams are organised under a guild into Attack / Defence. The category is
+// fixed when the team is created and drives its auto name (Att 1, Def 1, …).
+export const CATEGORIES = ['attack', 'defence']
+export const CATEGORY_META = {
+  attack: { label: 'Attack', prefix: 'Att' },
+  defence: { label: 'Defence', prefix: 'Def' }
+}
+export const normalizeCategory = (c, hintName = '') =>
+  c === 'defence' || c === 'attack'
+    ? c
+    : /^\s*def/i.test(hintName)
+      ? 'defence'
+      : 'attack'
+
 export const SIDE_IDS = ['ally', 'enemy']
 
 export const SIDE_META = {
@@ -33,11 +47,17 @@ export const squadColorForIndex = (i, side = 'ally') => {
   return p[((i % p.length) + p.length) % p.length]
 }
 
-export function makeSquad({ side, name, lane = 'Unassigned', targetSize = DEFAULT_SQUAD_SIZE, color }) {
+export function makeSquad({
+  side,
+  category = 'attack',
+  lane = 'Unassigned',
+  targetSize = DEFAULT_SQUAD_SIZE,
+  color
+}) {
   return {
     id: undefined, // filled by store
     side,
-    name,
+    category: normalizeCategory(category),
     lane,
     targetSize,
     color: color ?? squadColorForIndex(0, side),
@@ -128,7 +148,7 @@ export function migrateStrategy(input) {
     ? input.squads.map((q) => ({
         id: q.id,
         side: q.side === 'enemy' ? 'enemy' : 'ally',
-        name: q.name ?? '',
+        category: normalizeCategory(q.category, q.name),
         lane: q.lane ?? 'Unassigned',
         targetSize: Number(q.targetSize) || DEFAULT_SQUAD_SIZE,
         color: q.color ?? squadColorForIndex(0, q.side),

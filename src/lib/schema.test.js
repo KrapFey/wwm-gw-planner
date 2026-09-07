@@ -14,10 +14,14 @@ describe('emptyStrategy', () => {
 })
 
 describe('makeSquad / makePlayer', () => {
-  it('a squad has a token slot and no leader field', () => {
-    const q = makeSquad({ side: 'ally', name: 'A', targetSize: 5 })
-    expect(q).toMatchObject({ side: 'ally', token: null })
+  it('a squad has a token slot, a category, and no name / leader field', () => {
+    const q = makeSquad({ side: 'ally', targetSize: 5 })
+    expect(q).toMatchObject({ side: 'ally', category: 'attack', token: null })
     expect(q).not.toHaveProperty('leaderId')
+    expect(q).not.toHaveProperty('name')
+  })
+  it('makeSquad keeps an explicit defence category', () => {
+    expect(makeSquad({ side: 'enemy', category: 'defence' }).category).toBe('defence')
   })
   it('a player is just a role slot', () => {
     const p = makePlayer({ side: 'enemy' })
@@ -51,7 +55,7 @@ describe('migrateStrategy', () => {
     expect(out.players.map((p) => p.id)).toEqual(['p1'])
   })
 
-  it('normalises old squads: token slot kept, dead fields dropped', () => {
+  it('normalises old squads: token slot kept, dead fields dropped, category added', () => {
     const out = migrateStrategy({
       squads: [
         { id: 'q1', side: 'ally', name: 'T', lane: 'Top', targetSize: 5, leaderId: 'x', token: { x: 1, y: 2 } }
@@ -59,7 +63,20 @@ describe('migrateStrategy', () => {
       players: [{ id: 'p1', side: 'ally', role: 'Tank', squadId: 'q1' }]
     })
     expect(out.squads[0]).not.toHaveProperty('leaderId')
+    expect(out.squads[0]).not.toHaveProperty('name')
+    expect(out.squads[0].category).toBe('attack')
     expect(out.squads[0].token).toEqual({ x: 1, y: 2 })
+  })
+
+  it('infers defence category from a legacy "Def ..." team name', () => {
+    const out = migrateStrategy({
+      squads: [
+        { id: 'q1', side: 'ally', name: 'Def 2', targetSize: 5 },
+        { id: 'q2', side: 'ally', name: 'Push top', targetSize: 5 },
+        { id: 'q3', side: 'ally', category: 'defence', name: 'whatever', targetSize: 5 }
+      ]
+    })
+    expect(out.squads.map((q) => q.category)).toEqual(['defence', 'attack', 'defence'])
   })
 
   it('drops dead player fields (name / weapons / token)', () => {

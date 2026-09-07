@@ -1,7 +1,21 @@
 // Pure derived-data helpers for the roster / team-organization views.
-import { ROLES, LANES, MAX_PLAYERS_PER_SIDE } from './schema'
+import { ROLES, LANES, MAX_PLAYERS_PER_SIDE, CATEGORY_META } from './schema'
 
 const zeroRoleTally = () => Object.fromEntries(ROLES.map((r) => [r, 0]))
+
+// Teams are numbered 1..n within their (side, category). Names are derived, not
+// stored, so deleting a team renumbers the rest.
+export function squadOrdinal(strategy, squad) {
+  const peers = strategy.squads.filter(
+    (q) => q.side === squad.side && q.category === squad.category
+  )
+  return peers.findIndex((q) => q.id === squad.id) + 1
+}
+
+export function squadLabel(strategy, squad) {
+  const meta = CATEGORY_META[squad.category] ?? CATEGORY_META.attack
+  return `${meta.prefix} ${squadOrdinal(strategy, squad)}`
+}
 
 export function squadPlayers(strategy, squadId) {
   return strategy.players.filter((p) => p.squadId === squadId)

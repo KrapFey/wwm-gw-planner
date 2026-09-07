@@ -1,6 +1,6 @@
 import { Group, Rect, Text, Circle } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
-import { squadStats } from '../../lib/selectors.js'
+import { squadStats, squadLabel } from '../../lib/selectors.js'
 import { ROLES, SIDE_META } from '../../lib/schema.js'
 import { clampToMap } from '../../lib/mapLayout.js'
 
@@ -9,13 +9,17 @@ const FONT = 13
 const PAD_X = 14
 const BADGE_W = 24
 const LETTER = { Tank: 'T', DPS: 'D', Healer: 'H' }
+const DISC_R = 15
 
 // A whole team placed on the map as one draggable pill. The pill is
 // side-coded (blue border/glow = ours, red = enemy); the small dot + count
 // badge use the team's own accent so same-side teams stay distinguishable.
+// Middle-click collapses it to a bare colour disc showing the team's size.
 export default function SquadToken({ squad, override, onMove, onRemove, locked = false }) {
   const setSquadToken = useStore((s) => s.setSquadToken)
   const strategy = useStore((s) => s.strategy)
+  const collapsed = useStore((s) => !!s.ui.collapsedPills[squad.id])
+  const togglePillCollapsed = useStore((s) => s.togglePillCollapsed)
   const { fill, byRole } = squadStats(strategy, squad)
 
   const move = onMove ?? ((pos) => setSquadToken(squad.id, pos))
@@ -24,7 +28,55 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
   const y = override?.y ?? squad.token.y
 
   const sideColor = SIDE_META[squad.side]?.color ?? '#888'
-  const name = squad.name || 'Team'
+  const name = squadLabel(strategy, squad)
+
+  // middle-click toggles the collapsed (bare disc) view
+  const onMouseDown = (e) => {
+    if (e.evt?.button === 1) {
+      e.evt.preventDefault()
+      e.cancelBubble = true
+      togglePillCollapsed(squad.id)
+    }
+  }
+
+  const dragProps = {
+    x,
+    y,
+    draggable: !locked,
+    onMouseDown,
+    onDragStart: (e) => (e.cancelBubble = true),
+    onDragEnd: (e) => move(clampToMap({ x: e.target.x(), y: e.target.y() })),
+    onDblClick: locked ? undefined : remove,
+    onDblTap: locked ? undefined : remove
+  }
+
+  if (collapsed) {
+    return (
+      <Group {...dragProps}>
+        <Circle
+          radius={DISC_R}
+          fill={squad.color}
+          stroke={sideColor}
+          strokeWidth={2.5}
+          shadowColor={sideColor}
+          shadowBlur={9}
+          shadowOpacity={0.35}
+        />
+        <Text
+          x={-DISC_R}
+          y={-6}
+          width={DISC_R * 2}
+          align="center"
+          text={String(fill)}
+          fontSize={13}
+          fontStyle="bold"
+          fill="#0c0e12"
+          listening={false}
+        />
+      </Group>
+    )
+  }
+
   const comp = ROLES.filter((r) => byRole[r] > 0)
     .map((r) => `${LETTER[r]}${byRole[r]}`)
     .join(' ')
@@ -43,15 +95,7 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
   const subW = Math.ceil(subtitle.length * SUB_FONT * 0.6) + 16
 
   return (
-    <Group
-      x={x}
-      y={y}
-      draggable={!locked}
-      onDragStart={(e) => (e.cancelBubble = true)}
-      onDragEnd={(e) => move(clampToMap({ x: e.target.x(), y: e.target.y() }))}
-      onDblClick={locked ? undefined : remove}
-      onDblTap={locked ? undefined : remove}
-    >
+    <Group {...dragProps}>
       {/* base + side wash */}
       <Rect
         x={left}

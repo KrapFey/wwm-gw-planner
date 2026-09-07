@@ -1,6 +1,6 @@
 import { useStore } from '../../store/useStore.js'
 import { ROLES, LANES, SQUAD_SIZE_PRESETS } from '../../lib/schema.js'
-import { squadStats, ROLE_ICON } from '../../lib/selectors.js'
+import { squadStats, squadLabel, ROLE_ICON } from '../../lib/selectors.js'
 import PlayerRow from './PlayerRow.jsx'
 
 export default function SquadCard({ squad }) {
@@ -13,6 +13,7 @@ export default function SquadCard({ squad }) {
 
   const { players, byRole, fill, over, warnings } = squadStats(strategy, squad)
   const pct = Math.min(100, squad.targetSize ? (fill / squad.targetSize) * 100 : 0)
+  const label = squadLabel(strategy, squad)
 
   return (
     <div className="squad" style={{ borderLeftColor: squad.color }}>
@@ -37,12 +38,9 @@ export default function SquadCard({ squad }) {
         >
           ⠿
         </span>
-        <input
-          className="name"
-          value={squad.name}
-          onChange={(e) => updateSquad(squad.id, { name: e.target.value })}
-          aria-label="Team name"
-        />
+        <span className="name" title="Team name is set automatically">
+          {label}
+        </span>
 
         <span className={'fill' + (over ? ' over' : '')} title={`${fill} of ${squad.targetSize}`}>
           <span className="fill-bar">
@@ -58,7 +56,7 @@ export default function SquadCard({ squad }) {
           title="Remove team and all its players"
           onClick={() => {
             const n = players.length
-            if (!n || confirm(`Delete "${squad.name}" and its ${n} player${n === 1 ? '' : 's'}?`))
+            if (!n || confirm(`Delete "${label}" and its ${n} player${n === 1 ? '' : 's'}?`))
               removeSquad(squad.id)
           }}
         >
