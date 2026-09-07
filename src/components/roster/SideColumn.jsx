@@ -22,17 +22,20 @@ export default function SideColumn({ sideId, meta }) {
 
       <div className="side-body">
         <div className="summary">
-          {ROLES.map((r) => (
-            <span className="chip" key={r} title={r}>
-              {ROLE_ICON[r]} {summary.byRole[r]}
-            </span>
-          ))}
-          <span className="summary-div" />
-          {LANES.map((l) => (
-            <span className="chip" key={l} title={`${l} lane players`}>
-              {l[0]} {summary.byLane[l]}
-            </span>
-          ))}
+          <div className="stat-group">
+            {ROLES.map((r) => (
+              <span key={r} title={`${r} players`}>
+                {ROLE_ICON[r]} {summary.byRole[r]}
+              </span>
+            ))}
+          </div>
+          <div className="stat-group">
+            {LANES.map((l) => (
+              <span key={l} title={`${l} lane players`}>
+                {l[0]} {summary.byLane[l]}
+              </span>
+            ))}
+          </div>
         </div>
 
         {CATEGORIES.map((cat) => {

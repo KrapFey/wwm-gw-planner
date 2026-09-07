@@ -498,11 +498,25 @@ select {
   align-items: center;
   gap: 6px;
 }
-.summary-div {
-  width: 1px;
-  align-self: stretch;
-  background: var(--border-2);
-  margin: 2px 3px;
+/* role tally + lane tally, each as one tidy capsule so a narrow panel wraps
+   the whole group rather than orphaning a single stat */
+.stat-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 11px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.stat-group > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .chip {
