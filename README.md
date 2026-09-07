@@ -36,7 +36,14 @@ If `esbuild` fails to run its postinstall in a locked-down npm, run once:
 | 3 | Konva battle map: real map image, fixture layout editor, team pill tokens, pan/zoom | done |
 | 4 | Tactical layer: markers, freehand/arrow drawing + eraser, sticky notes, timers | done |
 | — | UI/UX redesign + floating-dock layout; **named strategy library**; persisted collapse state; marker rotate/scale/label; drawing select+move; tool shortcuts (V/D/A/E); lint + tests + CI | done |
-| 5 | Real PWA icons, map.png → WebP, Oracle deploy notes | next |
+| 5 | Real PWA icons, map.png → WebP | next |
+
+## Deploy
+
+Static build — `npm run build` produces `dist/`, host it anywhere. Full runbook for
+the Oracle Cloud VM (clone + build on the box, Caddy for auto-HTTPS, `git pull` to
+update) is in [`deploy/README.md`](deploy/README.md); config in `deploy/Caddyfile`
+and `deploy/deploy.sh`.
 
 ## Strategy library
 
