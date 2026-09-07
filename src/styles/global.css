@@ -773,18 +773,19 @@ select {
   backdrop-filter: blur(12px);
 }
 
+/* nudged in past the 18px roster collapse tab on the pane's left edge */
 .canvas-dock {
-  left: 12px;
+  left: 28px;
   top: 12px;
   flex-direction: column;
 }
 .dock-ctx {
-  left: 60px;
+  left: 76px;
   top: 12px;
   align-items: center;
 }
 .marker-palette {
-  left: 60px;
+  left: 76px;
   top: 12px;
   flex-direction: column;
   width: 148px;
