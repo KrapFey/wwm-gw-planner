@@ -1,8 +1,9 @@
 name: CI
 
 on:
-  push:
   pull_request:
+  push:
+    branches-ignore: [main]
 
 jobs:
   check:

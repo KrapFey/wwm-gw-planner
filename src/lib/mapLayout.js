@@ -2,9 +2,9 @@
 // over its native pixel space.
 const BASE = import.meta.env.BASE_URL
 
-export const MAP_SRC = BASE + 'assets/map.png'
+export const MAP_SRC = BASE + 'assets/map.webp'
 
-// Native pixel size of assets/map.png.
+// Native pixel size of the map image.
 export const MAP_W = 1430
 export const MAP_H = 1100
 

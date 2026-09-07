@@ -11,7 +11,7 @@ somewhere (e.g. Oracle Cloud). Strategies are shared by exporting/importing a JS
 - Zustand (+ `zundo` for undo/redo), autosaved to `localStorage`
 - `vite-plugin-pwa` for offline install
 - Konva / react-konva for the battle map
-- ESLint (flat config) + Vitest; GitHub Actions CI (`.github/workflows/ci.yml`)
+- ESLint (flat config) + Vitest; GitHub Actions CI + push-to-deploy (`.github/workflows/`)
 
 ## Develop
 
@@ -22,6 +22,7 @@ npm run build    # -> dist/  (static, deploy anywhere)
 npm run preview  # serve the built dist/
 npm run lint
 npm run test
+npm run gen:assets  # regenerate map.webp + PWA icons from source art (rare)
 ```
 
 If `esbuild` fails to run its postinstall in a locked-down npm, run once:
@@ -36,14 +37,14 @@ If `esbuild` fails to run its postinstall in a locked-down npm, run once:
 | 3 | Konva battle map: real map image, fixture layout editor, team pill tokens, pan/zoom | done |
 | 4 | Tactical layer: markers, freehand/arrow drawing + eraser, sticky notes, timers | done |
 | — | UI/UX redesign + floating-dock layout; **named strategy library**; persisted collapse state; marker rotate/scale/label; drawing select+move; tool shortcuts (V/D/A/E); lint + tests + CI | done |
-| 5 | Real PWA icons, map.png → WebP | next |
+| 5 | Deploy: Oracle VM + Caddy auto-HTTPS, push-to-deploy CI, map→WebP (2.9 MB → 0.3 MB), real PWA icons, latin-only font precache | done |
 
 ## Deploy
 
-Static build — `npm run build` produces `dist/`, host it anywhere. Full runbook for
-the Oracle Cloud VM (clone + build on the box, Caddy for auto-HTTPS, `git pull` to
-update) is in [`deploy/README.md`](deploy/README.md); config in `deploy/Caddyfile`
-and `deploy/deploy.sh`.
+Static build — `npm run build` produces `dist/`, host it anywhere. Live setup is an
+Oracle Cloud VM behind Caddy (auto-HTTPS via `sslip.io`); pushing to `main` builds
+and rsyncs `dist/` to the VM (`.github/workflows/deploy.yml`). Full runbook +
+`deploy/Caddyfile` + manual fallback in [`deploy/README.md`](deploy/README.md).
 
 ## Strategy library
 

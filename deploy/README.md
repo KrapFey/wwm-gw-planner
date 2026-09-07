@@ -118,21 +118,49 @@ and it should be installable / work offline.
 > inside the Caddyfile block to serve with a self-signed cert while you sort out
 > a real domain.
 
-## 7. Updating later
+## 7. Updating
+
+### Option A — push-to-deploy (GitHub Actions, recommended)
+
+`.github/workflows/deploy.yml` builds on every push to `main` and rsyncs `dist/`
+to `/var/www/gw-planner` over SSH. The VM does no building.
+
+One-time setup:
+
+```bash
+# on the VM: a key CI will use to log in (separate from the git deploy key)
+ssh-keygen -t ed25519 -C "gh-actions-deploy" -f ~/.ssh/gh_deploy -N ""
+cat ~/.ssh/gh_deploy.pub >> ~/.ssh/authorized_keys
+cat ~/.ssh/gh_deploy            # <-- the PRIVATE key, paste into the secret below
+```
+
+In the GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Value |
+|---|---|
+| `VM_HOST` | the VM's public IP |
+| `VM_USER` | your VM login user (e.g. `ubuntu`) |
+| `VM_SSH_KEY` | the full contents of `~/.ssh/gh_deploy` (private key) |
+
+`/var/www/gw-planner` must be writable by `$VM_USER` (step 5 already `chown`s it).
+Until the secrets exist the deploy step skips and the workflow just builds.
+
+### Option B — manual, on the VM (fallback / no CI)
 
 ```bash
 cd ~/apps/wwm-gw-planner && ./deploy/deploy.sh
 ```
 
-That fetches `origin/main`, `npm ci`, `npm run build`, and rsyncs `dist/` into
-`/var/www/gw-planner`. Caddy serves the new files immediately (no restart needed).
+Fetches `origin/main`, `npm ci`, `npm run build`, rsyncs `dist/` into
+`/var/www/gw-planner`. Caddy serves new files immediately (no restart).
 
 ## Notes
 
 - Caddy runs as a **systemd service**, not in tmux — it survives reboots. Your
   Discord bot's tmux session is untouched (it only makes outbound connections).
-- Node/`node_modules` live only in `~/apps/wwm-gw-planner`; Caddy serves the
-  copied `/var/www/gw-planner` so a mid-build state never gets served.
-- If the on-VM build ever strains RAM, switch to building in GitHub Actions and
-  having the VM pull just the built artifact — the serve half of this setup
-  doesn't change.
+- With push-to-deploy the VM needs neither Node nor the repo checkout (Option B's
+  `~/apps/wwm-gw-planner` is just the manual fallback).
+- Caddy serves the rsync'd `/var/www/gw-planner`, never a mid-build directory.
+- `map.webp` (~300 KB) + latin-only font precache keep the offline bundle ~1.4 MB.
+  Regenerate the map/icon assets with `npm run gen:assets` if the source art
+  changes.

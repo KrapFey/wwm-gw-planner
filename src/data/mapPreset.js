@@ -1,6 +1,6 @@
 // Default placement of map fixtures (geese, trees, bulwarks, boss).
 //
-// Tuned in "Edit map layout" mode against public/assets/map.png (1430x1100).
+// Tuned in "Edit map layout" mode against the map image (1430x1100).
 // x/y are map-image pixels and reference each fixture's CENTRE.
 // Each side's three bulwarks share one x so they line up vertically.
 
