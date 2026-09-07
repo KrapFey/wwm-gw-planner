@@ -18,12 +18,16 @@ Security Lists → *Default Security List* → **Add Ingress Rules**:
 - Source `0.0.0.0/0`, IP Protocol `TCP`, Dest port `443`
 
 **b) Host firewall** on the VM. Oracle's Ubuntu image ships iptables with a
-default-deny INPUT:
+`REJECT all` rule in `INPUT` — the new ACCEPT rules **must be inserted before
+it**, or they're dead (packets hit REJECT first). This finds the REJECT line
+number and inserts ahead of it:
 
 ```bash
-sudo iptables -L INPUT -n --line-numbers        # inspect; find the REJECT line number
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80  -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+sudo iptables -L INPUT -n --line-numbers        # see current rules
+REJ=$(sudo iptables -L INPUT --line-numbers -n | awk '/REJECT/{print $1; exit}')
+sudo iptables -I INPUT "$REJ" -p tcp --dport 80  -m state --state NEW -j ACCEPT
+sudo iptables -I INPUT "$REJ" -p tcp --dport 443 -m state --state NEW -j ACCEPT
+sudo iptables -L INPUT -n --line-numbers        # verify 80/443 are ABOVE the REJECT
 sudo netfilter-persistent save
 ```
 
