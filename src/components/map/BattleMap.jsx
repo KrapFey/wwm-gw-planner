@@ -600,26 +600,26 @@ export default function BattleMap() {
               <IconLayers />
             </button>
             <span className="dock-div" />
-            <button
-              className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
-              onClick={() => setShortcutsOpen((v) => !v)}
-              title="Keyboard shortcuts"
-            >
-              <IconHelp />
-            </button>
-          </div>
-        )}
-
-        {/* keyboard shortcuts cheatsheet */}
-        {!editLayout && shortcutsOpen && (
-          <div className="shortcuts-pop">
-            <div className="shortcuts-title">Keyboard shortcuts</div>
-            {SHORTCUTS.map(([key, label]) => (
-              <div className="shortcuts-row" key={key}>
-                <kbd>{key}</kbd>
-                <span>{label}</span>
-              </div>
-            ))}
+            <div className="dock-help">
+              <button
+                className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
+                onClick={() => setShortcutsOpen((v) => !v)}
+                title="Keyboard shortcuts"
+              >
+                <IconHelp />
+              </button>
+              {shortcutsOpen && (
+                <div className="shortcuts-pop">
+                  <div className="shortcuts-title">Keyboard shortcuts</div>
+                  {SHORTCUTS.map(([key, label]) => (
+                    <div className="shortcuts-row" key={key}>
+                      <kbd>{key}</kbd>
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
