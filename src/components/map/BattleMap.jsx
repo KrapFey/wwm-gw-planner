@@ -84,6 +84,7 @@ export default function BattleMap() {
   const setPlayback = useStore((s) => s.setPlayback)
   const updatePhaseSquad = useStore((s) => s.updatePhaseSquad)
   const updatePhaseMarker = useStore((s) => s.updatePhaseMarker)
+  const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
   const setSquadToken = useStore((s) => s.setSquadToken)
   const clearTokens = useStore((s) => s.clearTokens)
   const addMarker = useStore((s) => s.addMarker)
@@ -159,13 +160,19 @@ export default function BattleMap() {
         return
       }
       if (k === 'delete' || k === 'backspace') {
+        // Editing a phase -> Delete hides from *this* phase (non-destructive);
+        // otherwise it removes the entity from the whole document.
+        const p = useStore.getState().playback
+        const ep = p.open && p.phaseId ? p.phaseId : null
         if (selMarker) {
           e.preventDefault()
-          removeMarker(selMarker)
+          if (ep) togglePhaseHidden(ep, 'markers', selMarker)
+          else removeMarker(selMarker)
           setSelMarker(null)
         } else if (selDrawing) {
           e.preventDefault()
-          removeDrawing(selDrawing)
+          if (ep) togglePhaseHidden(ep, 'drawings', selDrawing)
+          else removeDrawing(selDrawing)
           setSelDrawing(null)
         }
         return
@@ -423,31 +430,45 @@ export default function BattleMap() {
               listening={interactive}
               opacity={editLayout ? 0.35 : 1}
             >
-              {placedSquads.map((q) => (
-                <SquadToken
-                  key={q.id}
-                  squad={q}
-                  override={frame?.squads[q.id]}
-                  onMove={pb.open ? (pos) => onSquadMoved(q.id, pos) : undefined}
-                  locked={pb.playing}
-                />
-              ))}
+              {placedSquads.map((q) =>
+                frame?.hiddenSquads?.has(q.id) ? null : (
+                  <SquadToken
+                    key={q.id}
+                    squad={q}
+                    override={frame?.squads[q.id]}
+                    onMove={pb.open ? (pos) => onSquadMoved(q.id, pos) : undefined}
+                    onRemove={
+                      editingPhase
+                        ? () => togglePhaseHidden(editingPhase, 'squads', q.id)
+                        : undefined
+                    }
+                    locked={pb.playing}
+                  />
+                )
+              )}
             </Layer>
 
             {/* markers sit above team pills so a fresh/moved marker is never
                 hidden under one; the last item in `markers` draws on top */}
             <Layer listening={interactive}>
-              {markers.map((m) => (
-                <Marker
-                  key={m.id}
-                  marker={m}
-                  selected={m.id === selMarker}
-                  onSelect={selectMarker}
-                  override={frame?.markers[m.id]}
-                  onMove={pb.open ? (pos) => onMarkerMoved(m.id, pos) : undefined}
-                  locked={pb.playing}
-                />
-              ))}
+              {markers.map((m) =>
+                frame?.hiddenMarkers?.has(m.id) ? null : (
+                  <Marker
+                    key={m.id}
+                    marker={m}
+                    selected={m.id === selMarker}
+                    onSelect={selectMarker}
+                    override={frame?.markers[m.id]}
+                    onMove={pb.open ? (pos) => onMarkerMoved(m.id, pos) : undefined}
+                    onRemove={
+                      editingPhase
+                        ? () => togglePhaseHidden(editingPhase, 'markers', m.id)
+                        : undefined
+                    }
+                    locked={pb.playing}
+                  />
+                )
+              )}
             </Layer>
           </Stage>
         )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 import { totalDuration, activePhaseIndex } from '../../lib/playback.js'
+import { MARKER_KINDS } from '../../lib/tacticalDefs.js'
 import { IconPlay, IconPause, IconSkipBack, IconSkipFwd, IconX } from '../Icons.jsx'
 
 const secs = (ms) => (ms / 1000).toFixed(1)
@@ -9,6 +10,8 @@ export default function PhasesBar() {
   const phases = useStore((s) => s.strategy.phases)
   const drawings = useStore((s) => s.strategy.drawings)
   const notes = useStore((s) => s.strategy.notes)
+  const markers = useStore((s) => s.strategy.markers)
+  const squads = useStore((s) => s.strategy.squads)
   const pb = useStore((s) => s.playback)
   const setPlayback = useStore((s) => s.setPlayback)
   const selectPhase = useStore((s) => s.selectPhase)
@@ -45,6 +48,9 @@ export default function PhasesBar() {
 
   const selPhase = pb.phaseId ? phases.find((p) => p.id === pb.phaseId) : null
   const selIndex = phases.findIndex((p) => p.id === pb.phaseId)
+  const placedSquads = squads.filter((q) => q.token)
+  const hasVisTargets =
+    drawings.length > 0 || notes.length > 0 || markers.length > 0 || placedSquads.length > 0
 
   return (
     <div className="phases-bar">
@@ -193,7 +199,7 @@ export default function PhasesBar() {
             s
           </label>
 
-          {(drawings.length > 0 || notes.length > 0) && (
+          {hasVisTargets && (
             <div className="pb-vis" ref={visRef}>
               <button className="tiny ghost" onClick={() => setVisOpen((v) => !v)}>
                 Visible ▾
@@ -203,6 +209,35 @@ export default function PhasesBar() {
                   <div className="muted" style={{ fontSize: 10, padding: '2px 4px' }}>
                     shown in {selPhase.name}
                   </div>
+                  {placedSquads.map((q) => {
+                    const hidden = selPhase.board.hiddenSquads?.includes(q.id)
+                    return (
+                      <label key={q.id}>
+                        <input
+                          type="checkbox"
+                          checked={!hidden}
+                          onChange={() => togglePhaseHidden(selPhase.id, 'squads', q.id)}
+                        />
+                        <span className="mk-dot" style={{ background: q.color }} />
+                        {q.name}
+                      </label>
+                    )
+                  })}
+                  {markers.map((m) => {
+                    const hidden = selPhase.board.hiddenMarkers?.includes(m.id)
+                    const meta = MARKER_KINDS[m.kind] || {}
+                    return (
+                      <label key={m.id}>
+                        <input
+                          type="checkbox"
+                          checked={!hidden}
+                          onChange={() => togglePhaseHidden(selPhase.id, 'markers', m.id)}
+                        />
+                        <span className="mk-dot" style={{ background: meta.color }} />
+                        {meta.label || 'Marker'}
+                      </label>
+                    )
+                  })}
                   {drawings.map((d, i) => {
                     const hidden = selPhase.board.hiddenDrawings?.includes(d.id)
                     return (

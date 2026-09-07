@@ -64,12 +64,20 @@ function blend(from, to, e) {
 
 const hiddenOf = (board) => ({
   hiddenDrawings: new Set(board?.hiddenDrawings || []),
-  hiddenNotes: new Set(board?.hiddenNotes || [])
+  hiddenNotes: new Set(board?.hiddenNotes || []),
+  hiddenMarkers: new Set(board?.hiddenMarkers || []),
+  hiddenSquads: new Set(board?.hiddenSquads || [])
 })
-const EMPTY_HIDDEN = { hiddenDrawings: new Set(), hiddenNotes: new Set() }
+const EMPTY_HIDDEN = {
+  hiddenDrawings: new Set(),
+  hiddenNotes: new Set(),
+  hiddenMarkers: new Set(),
+  hiddenSquads: new Set()
+}
 
 // Interpolated board at time `t` (ms). `start` is the Start frame.
-// Returns { squads, markers, phaseIndex, hiddenDrawings, hiddenNotes }.
+// Returns { squads, markers, phaseIndex, hiddenDrawings, hiddenNotes,
+//           hiddenMarkers, hiddenSquads }.
 // Visibility follows the phase being animated toward / rested on; at t<=0
 // (Start) everything is visible.
 export function frameAt(start, phases, t) {
@@ -100,7 +108,10 @@ export function frameAt(start, phases, t) {
       }
     }
     clock += dur
-    if (t < clock + hold) {
+    // `<=` so the exact arrival moment (holds default to 0) rests on this phase
+    // rather than starting the next transition at e=0 (which would show the next
+    // phase's visibility while positions haven't moved yet).
+    if (t <= clock + hold) {
       return {
         squads: { ...to.squads },
         markers: { ...to.markers },

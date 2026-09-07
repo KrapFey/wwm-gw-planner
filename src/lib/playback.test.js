@@ -54,6 +54,35 @@ describe('frameAt', () => {
     expect(f.squads.a).toEqual({ x: 10, y: 0 })
   })
 
+  it('landing exactly on a keyframe rests on THAT phase, not the next transition', () => {
+    // t = phaseArrivalTime(phases, 0) — where selectPhase parks you.
+    const p = [
+      { id: 'p1', duration: 1000, hold: 0, board: { squads: {}, markers: {}, hiddenDrawings: ['a'] } },
+      { id: 'p2', duration: 1000, hold: 0, board: { squads: {}, markers: {}, hiddenDrawings: ['b'] } }
+    ]
+    const f = frameAt(start, p, 1000)
+    expect(f.phaseIndex).toBe(0)
+    expect(f.hiddenDrawings.has('a')).toBe(true)
+    expect(f.hiddenDrawings.has('b')).toBe(false)
+  })
+
+  it('exposes hiddenMarkers / hiddenSquads sets', () => {
+    const p = [
+      {
+        id: 'p1',
+        duration: 1000,
+        hold: 0,
+        board: { squads: {}, markers: {}, hiddenMarkers: ['m1'], hiddenSquads: ['s1'] }
+      }
+    ]
+    const f = frameAt(start, p, 500)
+    expect(f.hiddenMarkers.has('m1')).toBe(true)
+    expect(f.hiddenSquads.has('s1')).toBe(true)
+    // empty at Start
+    expect(frameAt(start, p, 0).hiddenMarkers.size).toBe(0)
+    expect(frameAt(start, p, 0).hiddenSquads.size).toBe(0)
+  })
+
   it('during a hold the board rests on that phase', () => {
     const f = frameAt(start, phases, 2200) // 2000 arrival + into the 500ms hold
     expect(f.squads.b).toEqual({ x: 0, y: 0 })

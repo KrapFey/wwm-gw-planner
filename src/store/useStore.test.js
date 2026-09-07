@@ -181,4 +181,62 @@ describe('planning phases', () => {
     S().removeSquad(q1)
     expect(S().strategy.phases[0].board.squads[q1]).toBeUndefined()
   })
+
+  it('a marker added while a phase is selected is hidden in the other phases', () => {
+    seedTwoPills()
+    S().addPhase()
+    S().addPhase()
+    const [p1, p2] = S().strategy.phases
+    S().selectPhase(p1.id)
+    S().addMarker('attack', { x: 10, y: 10 })
+    const mId = S().strategy.markers[0].id
+    expect(S().strategy.phases[0].board.hiddenMarkers || []).not.toContain(mId)
+    expect(S().strategy.phases[1].board.hiddenMarkers).toContain(mId)
+    void p2
+  })
+
+  it('a pill dropped while a phase is selected is scoped to that phase', () => {
+    S().addSquad('ally')
+    const qId = S().strategy.squads[0].id
+    S().addPhase() // Start snapshot, no pills yet
+    S().addPhase()
+    const [p1] = S().strategy.phases
+    S().selectPhase(p1.id)
+    S().setSquadToken(qId, { x: 5, y: 5 })
+    expect(S().strategy.phases[0].board.hiddenSquads || []).not.toContain(qId)
+    expect(S().strategy.phases[1].board.hiddenSquads).toContain(qId)
+  })
+
+  it('adding a marker with no phase selected touches no phase', () => {
+    seedTwoPills()
+    S().addPhase()
+    S().selectPhase(null)
+    S().addMarker('attack', { x: 1, y: 1 })
+    expect(S().strategy.phases[0].board.hiddenMarkers || []).toHaveLength(0)
+  })
+
+  it('togglePhaseHidden flips marker visibility for one phase', () => {
+    seedTwoPills()
+    S().addMarker('attack', { x: 0, y: 0 })
+    const mId = S().strategy.markers[0].id
+    S().addPhase()
+    const phId = S().strategy.phases[0].id
+    S().togglePhaseHidden(phId, 'markers', mId)
+    expect(S().strategy.phases[0].board.hiddenMarkers).toContain(mId)
+    S().togglePhaseHidden(phId, 'markers', mId)
+    expect(S().strategy.phases[0].board.hiddenMarkers).not.toContain(mId)
+  })
+
+  it('removeMarker purges phase hiddenMarkers entries', () => {
+    seedTwoPills()
+    S().addPhase()
+    S().addPhase()
+    const [p1] = S().strategy.phases
+    S().selectPhase(p1.id)
+    S().addMarker('attack', { x: 0, y: 0 })
+    const mId = S().strategy.markers[0].id
+    expect(S().strategy.phases[1].board.hiddenMarkers).toContain(mId)
+    S().removeMarker(mId)
+    expect(S().strategy.phases[1].board.hiddenMarkers).not.toContain(mId)
+  })
 })

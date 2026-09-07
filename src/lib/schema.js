@@ -101,7 +101,9 @@ export function normalizePhase(p, i) {
       squads: pointDict(p?.board?.squads),
       markers: pointDict(p?.board?.markers),
       hiddenDrawings: Array.isArray(p?.board?.hiddenDrawings) ? p.board.hiddenDrawings : [],
-      hiddenNotes: Array.isArray(p?.board?.hiddenNotes) ? p.board.hiddenNotes : []
+      hiddenNotes: Array.isArray(p?.board?.hiddenNotes) ? p.board.hiddenNotes : [],
+      hiddenMarkers: Array.isArray(p?.board?.hiddenMarkers) ? p.board.hiddenMarkers : [],
+      hiddenSquads: Array.isArray(p?.board?.hiddenSquads) ? p.board.hiddenSquads : []
     },
     paths: p?.paths && typeof p.paths === 'object' ? { ...p.paths } : {}
   }

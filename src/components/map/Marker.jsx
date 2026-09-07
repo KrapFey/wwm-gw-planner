@@ -9,12 +9,13 @@ const R = 15
 // A modern map-pin: coloured teardrop that can be rotated to aim, a crisp
 // vector icon that stays upright in the head, a ground shadow, and a compact
 // caption chip.
-export default function Marker({ marker, selected, onSelect, override, onMove, locked = false }) {
+export default function Marker({ marker, selected, onSelect, override, onMove, onRemove, locked = false }) {
   const updateMarker = useStore((s) => s.updateMarker)
   const removeMarker = useStore((s) => s.removeMarker)
   const def = MARKER_KINDS[marker.kind] ?? MARKER_KINDS.attack
 
   const move = onMove ?? ((pos) => updateMarker(marker.id, pos))
+  const remove = onRemove ?? (() => removeMarker(marker.id))
   const sc = marker.scale || 1
   const rot = marker.rotation || 0
   const label = (marker.label ?? def.label).toUpperCase()
@@ -36,8 +37,8 @@ export default function Marker({ marker, selected, onSelect, override, onMove, l
         e.cancelBubble = true
         onSelect?.(marker.id)
       }}
-      onDblClick={locked ? undefined : () => removeMarker(marker.id)}
-      onDblTap={locked ? undefined : () => removeMarker(marker.id)}
+      onDblClick={locked ? undefined : remove}
+      onDblTap={locked ? undefined : remove}
     >
       <Ellipse
         x={0}

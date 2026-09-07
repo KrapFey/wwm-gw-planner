@@ -277,6 +277,7 @@ const creator = (set, get) => ({
       for (const p of s.phases) {
         delete p.board.squads[id]
         delete p.paths[id]
+        pullFrom(p.board, 'hiddenSquads', id)
       }
     }),
 
@@ -321,7 +322,11 @@ const creator = (set, get) => ({
   // ---- tactical: objective markers -------------------------------------
   addMarker: (kind, pos) =>
     commit(set, get, (s) => {
-      s.markers.push({ id: newId('mk'), kind, x: Math.round(pos.x), y: Math.round(pos.y) })
+      const id = newId('mk')
+      s.markers.push({ id, kind, x: Math.round(pos.x), y: Math.round(pos.y) })
+      // Added while editing a phase -> it belongs to that phase: hide it in the
+      // others so it doesn't silently appear across the whole sequence.
+      scopeToPhase(s, get().playback, 'hiddenMarkers', id)
     }),
   updateMarker: (id, patch) =>
     commit(set, get, (s) => {
@@ -334,7 +339,10 @@ const creator = (set, get) => ({
   removeMarker: (id) =>
     commit(set, get, (s) => {
       s.markers = s.markers.filter((m) => m.id !== id)
-      for (const p of s.phases) delete p.board.markers[id]
+      for (const p of s.phases) {
+        delete p.board.markers[id]
+        pullFrom(p.board, 'hiddenMarkers', id)
+      }
     }),
   clearMarkers: () => commit(set, get, (s) => { s.markers = [] }),
 
@@ -402,7 +410,11 @@ const creator = (set, get) => ({
   setSquadToken: (id, pos) =>
     commit(set, get, (s) => {
       const q = s.squads.find((x) => x.id === id)
-      if (q) q.token = pos ? { x: pos.x, y: pos.y, at: Date.now() } : null
+      if (!q) return
+      const wasPlaced = !!q.token
+      q.token = pos ? { x: pos.x, y: pos.y, at: Date.now() } : null
+      // Dropping a fresh pill while editing a phase scopes it to that phase.
+      if (pos && !wasPlaced) scopeToPhase(s, get().playback, 'hiddenSquads', id)
     }),
 
   // ---- planning phases (keyframe animation) ---------------------------
@@ -424,7 +436,9 @@ const creator = (set, get) => ({
             ),
             markers: Object.fromEntries(draft.markers.map((m) => [m.id, { x: m.x, y: m.y }])),
             hiddenDrawings: [],
-            hiddenNotes: []
+            hiddenNotes: [],
+            hiddenMarkers: [],
+            hiddenSquads: []
           }
     const phase = {
       id,
@@ -487,18 +501,45 @@ const creator = (set, get) => ({
       if (p) p.board.markers[markerId] = { x: Math.round(pos.x), y: Math.round(pos.y) }
     }),
 
-  // kind: 'drawings' | 'notes'
+  // kind: 'drawings' | 'notes' | 'markers' | 'squads'
   togglePhaseHidden: (phaseId, kind, id) =>
     commit(set, get, (s) => {
       const p = s.phases.find((x) => x.id === phaseId)
       if (!p) return
-      const key = kind === 'notes' ? 'hiddenNotes' : 'hiddenDrawings'
+      const key = HIDDEN_KEY[kind] || 'hiddenDrawings'
       const list = p.board[key] || (p.board[key] = [])
       const i = list.indexOf(id)
       if (i === -1) list.push(id)
       else list.splice(i, 1)
     })
 })
+
+const HIDDEN_KEY = {
+  drawings: 'hiddenDrawings',
+  notes: 'hiddenNotes',
+  markers: 'hiddenMarkers',
+  squads: 'hiddenSquads'
+}
+
+// Remove `id` from board[key] if present (used when an entity is deleted).
+function pullFrom(board, key, id) {
+  const list = board[key]
+  if (!Array.isArray(list)) return
+  const i = list.indexOf(id)
+  if (i !== -1) list.splice(i, 1)
+}
+
+// When an entity is created while a phase is being edited, hide it in every
+// OTHER phase so it reads as belonging to just that phase. No-op at Start / when
+// the timeline is closed (both leave playback.phaseId null).
+function scopeToPhase(strategy, playback, key, id) {
+  if (!playback?.phaseId) return
+  for (const p of strategy.phases) {
+    if (p.id === playback.phaseId) continue
+    const list = p.board[key] || (p.board[key] = [])
+    if (!list.includes(id)) list.push(id)
+  }
+}
 
 export const useStore = create(
   persist(
