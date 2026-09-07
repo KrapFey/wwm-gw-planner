@@ -6,7 +6,10 @@ import {
   MARKER_KINDS,
   MARKER_KIND_LIST,
   DRAW_COLORS,
-  DRAW_WIDTHS
+  DRAW_WIDTHS,
+  SHAPE_TOOLS,
+  SHAPE_META,
+  BOX_DRAW_TOOLS
 } from '../../lib/tacticalDefs.js'
 import MapImage from './MapImage.jsx'
 import FixtureSprite from './FixtureSprite.jsx'
@@ -30,12 +33,24 @@ import {
   IconTimeline,
   IconPlus,
   IconMinus,
-  IconFit
+  IconFit,
+  IconShapes,
+  IconSquare,
+  IconCircle,
+  IconTriangle,
+  IconLine
 } from '../Icons.jsx'
 
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 4
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+
+const SHAPE_ICON = {
+  rect: IconSquare,
+  ellipse: IconCircle,
+  triangle: IconTriangle,
+  line: IconLine
+}
 
 export default function BattleMap() {
   const wrapRef = useRef(null)
@@ -47,18 +62,23 @@ export default function BattleMap() {
   const [editLayout, setEditLayout] = useState(false)
   const [selectedFixture, setSelectedFixture] = useState(null)
 
-  const [tool, setToolRaw] = useState('select') // 'select' | 'pen' | 'arrow' | 'erase'
+  // tool: 'select' | 'pen' | 'arrow' | 'erase' | 'rect' | 'ellipse' | 'triangle' | 'line'
+  const [tool, setToolRaw] = useState('select')
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0])
   const [drawWidth, setDrawWidth] = useState(DRAW_WIDTHS[1].value)
   const [draft, setDraft] = useState(null)
   const [markerPalette, setMarkerPalette] = useState(false)
+  const [shapePalette, setShapePalette] = useState(false)
   const [selMarker, setSelMarker] = useState(null)
   const [selDrawing, setSelDrawing] = useState(null)
+
+  const isShapeTool = SHAPE_TOOLS.includes(tool)
 
   const setTool = (t) => {
     setToolRaw(t)
     if (t !== 'select') {
       setMarkerPalette(false)
+      setShapePalette(false)
       setSelMarker(null)
       setSelDrawing(null)
     }
@@ -157,6 +177,7 @@ export default function BattleMap() {
         setSelMarker(null)
         setSelDrawing(null)
         setMarkerPalette(false)
+        setShapePalette(false)
         return
       }
       if (k === 'delete' || k === 'backspace') {
@@ -182,6 +203,10 @@ export default function BattleMap() {
       else if (k === 'd') setTool('pen')
       else if (k === 'a') setTool('arrow')
       else if (k === 'e') setTool('erase')
+      else if (k === 'r') setTool('rect')
+      else if (k === 'c') setTool('ellipse')
+      else if (k === 't') setTool('triangle')
+      else if (k === 'l') setTool('line')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -293,7 +318,8 @@ export default function BattleMap() {
     if (!d) return
     const p = pointerLogical()
     if (!p) return
-    if (d.tool === 'arrow') {
+    if (BOX_DRAW_TOOLS.includes(d.tool)) {
+      // arrow + shapes: geometry is just the start + current corner
       d.points = [d.points[0], d.points[1], p.x, p.y]
     } else {
       const lx = d.points[d.points.length - 2]
@@ -308,10 +334,10 @@ export default function BattleMap() {
     const d = draftRef.current
     draftRef.current = null
     if (d) {
-      const enough =
-        d.tool === 'arrow'
-          ? Math.hypot(d.points[2] - d.points[0], d.points[3] - d.points[1]) > 6
-          : d.points.length >= 6
+      const enough = BOX_DRAW_TOOLS.includes(d.tool)
+        ? d.points.length >= 4 &&
+          Math.hypot(d.points[2] - d.points[0], d.points[3] - d.points[1]) > 6
+        : d.points.length >= 6
       if (enough) addDrawing(d)
     }
     setDraft(null)
@@ -509,6 +535,16 @@ export default function BattleMap() {
               <IconArrow />
             </button>
             <button
+              className={'dock-btn' + (isShapeTool || shapePalette ? ' on' : '')}
+              onClick={() => {
+                setShapePalette((v) => !v)
+                setMarkerPalette(false)
+              }}
+              title="Shapes — rectangle, ellipse, triangle, line"
+            >
+              <IconShapes />
+            </button>
+            <button
               className={'dock-btn' + (tool === 'erase' ? ' on' : '')}
               onClick={() => setTool('erase')}
               title="Eraser — click or drag over lines to delete"
@@ -551,8 +587,30 @@ export default function BattleMap() {
           </div>
         )}
 
+        {/* shape picker */}
+        {!editLayout && shapePalette && (
+          <div className="marker-palette shape-palette">
+            {SHAPE_TOOLS.map((s) => {
+              const Icon = SHAPE_ICON[s]
+              return (
+                <button
+                  key={s}
+                  className={'tiny marker-btn' + (tool === s ? ' on' : '')}
+                  onClick={() => {
+                    setTool(s)
+                    setShapePalette(false)
+                  }}
+                >
+                  <Icon />
+                  {SHAPE_META[s].label}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* draw context (colour + width) */}
-        {!editLayout && (tool === 'pen' || tool === 'arrow') && (
+        {!editLayout && !shapePalette && (tool === 'pen' || tool === 'arrow' || isShapeTool) && (
           <div className="dock-ctx">
             {DRAW_COLORS.map((c) => (
               <button

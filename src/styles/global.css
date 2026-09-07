@@ -989,6 +989,22 @@ select {
   justify-content: flex-start;
 }
 
+.shape-palette {
+  width: 132px;
+}
+.shape-palette .marker-btn {
+  border-color: var(--border-2);
+}
+.shape-palette .marker-btn.on {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.shape-palette .marker-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
 .mk-dot {
   width: 9px;
   height: 9px;

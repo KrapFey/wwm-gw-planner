@@ -52,6 +52,14 @@ export const IconTimeline = () => (
     <circle cx="8" cy="17" r="1.6" fill="currentColor" />
   </S>
 )
+export const IconShapes = () => (
+  <S><rect x="3" y="12" width="9" height="9" rx="1.5" /><circle cx="16.5" cy="7.5" r="4.5" /></S>
+)
+export const IconSquare = () => (<S><rect x="4" y="4" width="16" height="16" rx="3" /></S>)
+export const IconCircle = () => (<S><circle cx="12" cy="12" r="8" /></S>)
+export const IconTriangle = () => (<S><path d="M12 4l9 16H3z" /></S>)
+export const IconLine = () => (<S><path d="M5 19 19 5" /></S>)
+
 export const IconPlay = () => (<S><path d="M7 4l13 8-13 8z" fill="currentColor" /></S>)
 export const IconPause = () => (<S><path d="M7 4h4v16H7zM13 4h4v16h-4z" fill="currentColor" /></S>)
 export const IconSkipBack = () => (<S><path d="M18 5v14L8 12zM6 5v14" /></S>)

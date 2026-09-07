@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 import { totalDuration, activePhaseIndex } from '../../lib/playback.js'
-import { MARKER_KINDS } from '../../lib/tacticalDefs.js'
+import { MARKER_KINDS, DRAW_TOOL_LABEL } from '../../lib/tacticalDefs.js'
 import { IconPlay, IconPause, IconSkipBack, IconSkipFwd, IconX } from '../Icons.jsx'
 
 const secs = (ms) => (ms / 1000).toFixed(1)
@@ -248,7 +248,7 @@ export default function PhasesBar() {
                           onChange={() => togglePhaseHidden(selPhase.id, 'drawings', d.id)}
                         />
                         <span className="mk-dot" style={{ background: d.color }} />
-                        {d.tool === 'arrow' ? 'Arrow' : 'Line'} {i + 1}
+                        {DRAW_TOOL_LABEL[d.tool] ?? 'Line'} {i + 1}
                       </label>
                     )
                   })}
