@@ -854,6 +854,41 @@ select {
   width: 52px;
   padding: 3px 5px;
 }
+.pb-vis {
+  position: relative;
+}
+.pb-vis-pop {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 8;
+  width: 210px;
+  max-height: 220px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-2);
+}
+.pb-vis-pop label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 5px;
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.pb-vis-pop label:hover {
+  background: var(--surface-3);
+}
+.pb-vis-pop input[type='checkbox'] {
+  accent-color: var(--accent);
+}
 
 .dock-btn {
   width: 34px;

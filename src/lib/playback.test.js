@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { frameAt, totalDuration, phaseArrivalTime, startFrame } from './playback.js'
+import {
+  frameAt,
+  totalDuration,
+  phaseArrivalTime,
+  activePhaseIndex,
+  startFrame
+} from './playback.js'
 
 const start = {
   squads: { a: { x: 0, y: 0 }, b: { x: 100, y: 0 } },
@@ -17,6 +23,16 @@ describe('timeline math', () => {
   it('phaseArrivalTime is cumulative, excluding the target phase hold', () => {
     expect(phaseArrivalTime(phases, 0)).toBe(1000)
     expect(phaseArrivalTime(phases, 1)).toBe(2000)
+  })
+
+  it('activePhaseIndex: landing exactly on a keyframe stays on it (holds are 0)', () => {
+    expect(activePhaseIndex(phases, 0)).toBe(0)
+    expect(activePhaseIndex(phases, 500)).toBe(0)
+    expect(activePhaseIndex(phases, 1000)).toBe(0) // arrival of phase 0, not 1
+    expect(activePhaseIndex(phases, 1500)).toBe(1)
+    expect(activePhaseIndex(phases, 2000)).toBe(1) // arrival of phase 1
+    expect(activePhaseIndex(phases, 9999)).toBe(1)
+    expect(activePhaseIndex([], 5)).toBe(-1)
   })
 })
 
@@ -53,6 +69,22 @@ describe('frameAt', () => {
     const f = frameAt(start, [], 500)
     expect(f.squads.a).toEqual({ x: 0, y: 0 })
     expect(f.phaseIndex).toBe(-1)
+  })
+
+  it('exposes per-phase hidden sets (empty at Start)', () => {
+    const p = [
+      {
+        id: 'x',
+        duration: 1000,
+        hold: 0,
+        board: { squads: {}, markers: {}, hiddenDrawings: ['d1'], hiddenNotes: ['n1'] }
+      }
+    ]
+    expect(frameAt(start, p, 0).hiddenDrawings.size).toBe(0)
+    const mid = frameAt(start, p, 500)
+    expect(mid.hiddenDrawings.has('d1')).toBe(true)
+    expect(mid.hiddenNotes.has('n1')).toBe(true)
+    expect(frameAt(start, p, 9999).hiddenDrawings.has('d1')).toBe(true)
   })
 
   it('a squad only in the target pops to its target position', () => {

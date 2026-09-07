@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 import { totalDuration, activePhaseIndex } from '../../lib/playback.js'
 import { IconPlay, IconPause, IconSkipBack, IconSkipFwd, IconX } from '../Icons.jsx'
@@ -6,6 +7,8 @@ const secs = (ms) => (ms / 1000).toFixed(1)
 
 export default function PhasesBar() {
   const phases = useStore((s) => s.strategy.phases)
+  const drawings = useStore((s) => s.strategy.drawings)
+  const notes = useStore((s) => s.strategy.notes)
   const pb = useStore((s) => s.playback)
   const setPlayback = useStore((s) => s.setPlayback)
   const selectPhase = useStore((s) => s.selectPhase)
@@ -14,22 +17,32 @@ export default function PhasesBar() {
   const renamePhase = useStore((s) => s.renamePhase)
   const movePhase = useStore((s) => s.movePhase)
   const setPhaseTiming = useStore((s) => s.setPhaseTiming)
+  const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
+
+  const [visOpen, setVisOpen] = useState(false)
+  const visRef = useRef(null)
+  useEffect(() => {
+    if (!visOpen) return
+    const onDoc = (e) => {
+      if (!visRef.current?.contains(e.target)) setVisOpen(false)
+    }
+    window.addEventListener('mousedown', onDoc)
+    return () => window.removeEventListener('mousedown', onDoc)
+  }, [visOpen])
 
   const total = totalDuration(phases)
   const hasPhases = phases.length > 0
 
-  const activeIdx = pb.playing || pb.t > 0 ? activePhaseIndex(phases, pb.t) : -2
+  const scrubbed = pb.playing || pb.t > 0
+  const activeIdx = scrubbed ? activePhaseIndex(phases, pb.t) : -2
   const chipActive = (i) =>
-    pb.playing || pb.t > 0
-      ? i === activeIdx
-      : i === -1
-        ? !pb.phaseId
-        : phases[i]?.id === pb.phaseId
+    scrubbed ? i === activeIdx : i === -1 ? !pb.phaseId : phases[i]?.id === pb.phaseId
 
   const play = () => {
     if (!hasPhases) return
     setPlayback({ playing: true, t: pb.t >= total ? 0 : pb.t })
   }
+
   const selPhase = pb.phaseId ? phases.find((p) => p.id === pb.phaseId) : null
   const selIndex = phases.findIndex((p) => p.id === pb.phaseId)
 
@@ -94,8 +107,10 @@ export default function PhasesBar() {
           ))}
           <button
             className="pb-chip add"
-            title="Snapshot the current board as a new phase"
-            onClick={() => addPhase(pb.phaseId)}
+            title="Add a phase after the current one, seeded from it"
+            onClick={() =>
+              addPhase(pb.phaseId ?? phases[phases.length - 1]?.id ?? null)
+            }
           >
             + Phase
           </button>
@@ -177,6 +192,50 @@ export default function PhasesBar() {
             />
             s
           </label>
+
+          {(drawings.length > 0 || notes.length > 0) && (
+            <div className="pb-vis" ref={visRef}>
+              <button className="tiny ghost" onClick={() => setVisOpen((v) => !v)}>
+                Visible ▾
+              </button>
+              {visOpen && (
+                <div className="pb-vis-pop">
+                  <div className="muted" style={{ fontSize: 10, padding: '2px 4px' }}>
+                    shown in {selPhase.name}
+                  </div>
+                  {drawings.map((d, i) => {
+                    const hidden = selPhase.board.hiddenDrawings?.includes(d.id)
+                    return (
+                      <label key={d.id}>
+                        <input
+                          type="checkbox"
+                          checked={!hidden}
+                          onChange={() => togglePhaseHidden(selPhase.id, 'drawings', d.id)}
+                        />
+                        <span className="mk-dot" style={{ background: d.color }} />
+                        {d.tool === 'arrow' ? 'Arrow' : 'Line'} {i + 1}
+                      </label>
+                    )
+                  })}
+                  {notes.map((n, i) => {
+                    const hidden = selPhase.board.hiddenNotes?.includes(n.id)
+                    return (
+                      <label key={n.id}>
+                        <input
+                          type="checkbox"
+                          checked={!hidden}
+                          onChange={() => togglePhaseHidden(selPhase.id, 'notes', n.id)}
+                        />
+                        Note {i + 1}
+                        {n.text ? ` — ${n.text.slice(0, 16)}` : ''}
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <span className="spacer" />
           <button className="tiny ghost" onClick={() => movePhase(selPhase.id, -1)}>
             ‹ move

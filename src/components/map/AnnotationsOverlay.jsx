@@ -144,15 +144,15 @@ function TimerCard({ timer, view }) {
   )
 }
 
-export default function AnnotationsOverlay({ view }) {
+export default function AnnotationsOverlay({ view, hiddenNotes }) {
   const notes = useStore((s) => s.strategy.notes)
   const timers = useStore((s) => s.strategy.timers)
 
   return (
     <div className="annotations-overlay">
-      {notes.map((n) => (
-        <NoteCard key={n.id} note={n} view={view} />
-      ))}
+      {notes.map((n) =>
+        hiddenNotes?.has(n.id) ? null : <NoteCard key={n.id} note={n} view={view} />
+      )}
       {timers.map((t) => (
         <TimerCard key={t.id} timer={t} view={view} />
       ))}

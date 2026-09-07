@@ -485,6 +485,18 @@ const creator = (set, get) => ({
     commit(set, get, (s) => {
       const p = s.phases.find((x) => x.id === phaseId)
       if (p) p.board.markers[markerId] = { x: Math.round(pos.x), y: Math.round(pos.y) }
+    }),
+
+  // kind: 'drawings' | 'notes'
+  togglePhaseHidden: (phaseId, kind, id) =>
+    commit(set, get, (s) => {
+      const p = s.phases.find((x) => x.id === phaseId)
+      if (!p) return
+      const key = kind === 'notes' ? 'hiddenNotes' : 'hiddenDrawings'
+      const list = p.board[key] || (p.board[key] = [])
+      const i = list.indexOf(id)
+      if (i === -1) list.push(id)
+      else list.splice(i, 1)
     })
 })
 
@@ -564,6 +576,11 @@ export const useStore = create(
 // Hook into zundo's temporal store for undo/redo controls.
 export const useTemporal = (selector) =>
   useZustandStore(useStore.temporal, selector)
+
+// Dev-only: expose the live store for console poking / e2e checks.
+if (import.meta.env?.DEV && typeof window !== 'undefined') {
+  window.__store = useStore
+}
 
 // Undo/redo wrappers that also mirror the restored doc back into the library.
 function syncActiveDoc() {

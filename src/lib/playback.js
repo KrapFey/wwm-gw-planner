@@ -28,12 +28,14 @@ export function totalDuration(phases) {
   )
 }
 
-// Which phase the clock is currently within (0-based), or -1 with no phases.
+// Which phase the clock is currently within / resting on (0-based), or -1 with
+// no phases. `<=` so that landing exactly on a keyframe stays on that phase
+// (matters because holds default to 0).
 export function activePhaseIndex(phases, t) {
   let clock = 0
   for (let i = 0; i < phases.length; i++) {
     clock += Math.max(0, phases[i].duration || 0) + Math.max(0, phases[i].hold || 0)
-    if (t < clock) return i
+    if (t <= clock) return i
   }
   return phases.length - 1
 }
@@ -60,11 +62,26 @@ function blend(from, to, e) {
   return out
 }
 
+const hiddenOf = (board) => ({
+  hiddenDrawings: new Set(board?.hiddenDrawings || []),
+  hiddenNotes: new Set(board?.hiddenNotes || [])
+})
+const EMPTY_HIDDEN = { hiddenDrawings: new Set(), hiddenNotes: new Set() }
+
 // Interpolated board at time `t` (ms). `start` is the Start frame.
-// Returns { squads, markers, phaseIndex } — phaseIndex is the phase being
-// animated toward (or resting on), -1 while still at Start with no phases.
+// Returns { squads, markers, phaseIndex, hiddenDrawings, hiddenNotes }.
+// Visibility follows the phase being animated toward / rested on; at t<=0
+// (Start) everything is visible.
 export function frameAt(start, phases, t) {
-  if (!phases.length) return { ...start, phaseIndex: -1 }
+  if (!phases.length) return { ...start, phaseIndex: -1, ...EMPTY_HIDDEN }
+  if (t <= 0) {
+    return {
+      squads: { ...start.squads },
+      markers: { ...start.markers },
+      phaseIndex: 0,
+      ...EMPTY_HIDDEN
+    }
+  }
 
   let clock = 0
   let from = start
@@ -78,12 +95,18 @@ export function frameAt(start, phases, t) {
       return {
         squads: blend(from.squads, to.squads, e),
         markers: blend(from.markers, to.markers, e),
-        phaseIndex: i
+        phaseIndex: i,
+        ...hiddenOf(to)
       }
     }
     clock += dur
     if (t < clock + hold) {
-      return { squads: { ...to.squads }, markers: { ...to.markers }, phaseIndex: i }
+      return {
+        squads: { ...to.squads },
+        markers: { ...to.markers },
+        phaseIndex: i,
+        ...hiddenOf(to)
+      }
     }
     clock += hold
     from = to
@@ -93,6 +116,7 @@ export function frameAt(start, phases, t) {
   return {
     squads: { ...last.squads },
     markers: { ...last.markers },
-    phaseIndex: phases.length - 1
+    phaseIndex: phases.length - 1,
+    ...hiddenOf(last)
   }
 }

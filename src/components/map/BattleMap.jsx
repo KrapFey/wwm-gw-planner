@@ -406,14 +406,16 @@ export default function BattleMap() {
             </Layer>
 
             <Layer listening={interactive || tool === 'erase'}>
-              {drawings.map((d) => (
-                <DrawingShape
-                  key={d.id}
-                  drawing={d}
-                  selected={interactive && d.id === selDrawing}
-                  onSelect={selectDrawing}
-                />
-              ))}
+              {drawings.map((d) =>
+                frame?.hiddenDrawings?.has(d.id) ? null : (
+                  <DrawingShape
+                    key={d.id}
+                    drawing={d}
+                    selected={interactive && d.id === selDrawing}
+                    onSelect={selectDrawing}
+                  />
+                )
+              )}
               {draft && <DrawingShape drawing={{ ...draft, id: 'draft' }} live />}
             </Layer>
 
@@ -450,7 +452,9 @@ export default function BattleMap() {
           </Stage>
         )}
 
-        {!editLayout && <AnnotationsOverlay view={view} />}
+        {!editLayout && (
+          <AnnotationsOverlay view={view} hiddenNotes={frame?.hiddenNotes} />
+        )}
 
         {!editLayout && selMarker && markers.some((m) => m.id === selMarker) && (
           <MarkerInspector
