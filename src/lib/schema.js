@@ -76,7 +76,34 @@ export function emptyStrategy() {
     markers: [],
     drawings: [],
     notes: [],
-    timers: []
+    timers: [],
+    phases: []
+  }
+}
+
+const num = (v, fallback) => (Number.isFinite(+v) ? +v : fallback)
+const pointDict = (d) => {
+  const out = {}
+  for (const [id, p] of Object.entries(d || {})) {
+    if (p && Number.isFinite(+p.x) && Number.isFinite(+p.y)) {
+      out[id] = { x: +p.x, y: +p.y }
+    }
+  }
+  return out
+}
+export function normalizePhase(p, i) {
+  return {
+    id: p?.id || `ph_${i}`,
+    name: typeof p?.name === 'string' && p.name ? p.name : `Phase ${i + 1}`,
+    duration: Math.max(0, num(p?.duration, 2000)),
+    hold: Math.max(0, num(p?.hold, 0)),
+    board: {
+      squads: pointDict(p?.board?.squads),
+      markers: pointDict(p?.board?.markers),
+      hiddenDrawings: Array.isArray(p?.board?.hiddenDrawings) ? p.board.hiddenDrawings : [],
+      hiddenNotes: Array.isArray(p?.board?.hiddenNotes) ? p.board.hiddenNotes : []
+    },
+    paths: p?.paths && typeof p.paths === 'object' ? { ...p.paths } : {}
   }
 }
 
@@ -118,6 +145,7 @@ export function migrateStrategy(input) {
   merged.drawings = Array.isArray(input.drawings) ? input.drawings : []
   merged.notes = Array.isArray(input.notes) ? input.notes : []
   merged.timers = Array.isArray(input.timers) ? input.timers : []
+  merged.phases = Array.isArray(input.phases) ? input.phases.map(normalizePhase) : []
   delete merged.view // view (zoom/pan) is UI-only, kept outside the document
 
   // Every player belongs to a team; drop any that don't (incl. dangling refs).

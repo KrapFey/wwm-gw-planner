@@ -109,3 +109,76 @@ describe('team + marker store logic', () => {
     expect(S().ui.panels.enemy).toBe(false)
   })
 })
+
+describe('planning phases', () => {
+  const seedTwoPills = () => {
+    S().addSquad('ally')
+    S().addSquad('enemy')
+    const [q1, q2] = S().strategy.squads
+    S().setSquadToken(q1.id, { x: 100, y: 100 })
+    S().setSquadToken(q2.id, { x: 200, y: 200 })
+    return [q1.id, q2.id]
+  }
+
+  it('addPhase snapshots the placed pills and selects the phase', () => {
+    const [q1] = seedTwoPills()
+    S().addPhase()
+    expect(S().strategy.phases).toHaveLength(1)
+    const ph = S().strategy.phases[0]
+    expect(ph.board.squads[q1]).toEqual({ x: 100, y: 100 })
+    expect(S().playback.phaseId).toBe(ph.id)
+  })
+
+  it('updatePhaseSquad writes only to that phase, not the live token', () => {
+    const [q1] = seedTwoPills()
+    S().addPhase()
+    const phId = S().strategy.phases[0].id
+    S().updatePhaseSquad(phId, q1, { x: 999, y: 0 })
+    expect(S().strategy.phases[0].board.squads[q1]).toEqual({ x: 999, y: 0 })
+    expect(S().strategy.squads.find((q) => q.id === q1).token).toMatchObject({ x: 100, y: 100 })
+  })
+
+  it('addPhase(sourceId) copies the source board and inserts after it', () => {
+    seedTwoPills()
+    S().addPhase()
+    const first = S().strategy.phases[0].id
+    S().updatePhaseSquad(first, S().strategy.squads[0].id, { x: 5, y: 5 })
+    S().addPhase(first)
+    expect(S().strategy.phases).toHaveLength(2)
+    expect(S().strategy.phases[1].board.squads[S().strategy.squads[0].id]).toEqual({ x: 5, y: 5 })
+  })
+
+  it('selectPhase sets phaseId + scrubs t to its arrival time', () => {
+    seedTwoPills()
+    S().addPhase() // duration 2000
+    S().addPhase() // duration 2000
+    const [p1, p2] = S().strategy.phases
+    S().selectPhase(p2.id)
+    expect(S().playback.phaseId).toBe(p2.id)
+    expect(S().playback.t).toBe(4000)
+    S().selectPhase(null)
+    expect(S().playback.phaseId).toBeNull()
+    expect(S().playback.t).toBe(0)
+    void p1
+  })
+
+  it('movePhase reorders; removePhase drops it and clears selection', () => {
+    seedTwoPills()
+    S().addPhase()
+    S().addPhase()
+    const [a, b] = S().strategy.phases.map((p) => p.id)
+    S().movePhase(b, -1)
+    expect(S().strategy.phases.map((p) => p.id)).toEqual([b, a])
+    S().selectPhase(a)
+    S().removePhase(a)
+    expect(S().strategy.phases.map((p) => p.id)).toEqual([b])
+    expect(S().playback.phaseId).toBeNull()
+  })
+
+  it('removing a team also purges it from every phase board', () => {
+    const [q1] = seedTwoPills()
+    S().addPhase()
+    S().removeSquad(q1)
+    expect(S().strategy.phases[0].board.squads[q1]).toBeUndefined()
+  })
+})

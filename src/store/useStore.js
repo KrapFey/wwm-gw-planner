@@ -10,6 +10,7 @@ import {
   DEFAULT_SQUAD_SIZE
 } from '../lib/schema'
 import { MAP_W, MAP_H } from '../lib/mapLayout'
+import { phaseArrivalTime } from '../lib/playback'
 import { DEFAULT_FIXTURES } from '../data/mapPreset'
 import { newId } from '../lib/ids'
 
@@ -42,6 +43,22 @@ const clearHistory = () => {
     useStore.temporal.getState().clear()
   } catch {
     /* store not constructed yet */
+  }
+}
+
+const PLAYBACK_INIT = {
+  open: false,
+  phaseId: null,
+  playing: false,
+  t: 0,
+  speed: 1,
+  loop: false
+}
+const resetPlayback = () => {
+  try {
+    useStore.setState({ playback: { ...PLAYBACK_INIT } })
+  } catch {
+    /* not constructed yet */
   }
 }
 
@@ -79,6 +96,7 @@ const creator = (set, get) => ({
       strategy: doc
     })
     clearHistory()
+    resetPlayback()
   },
 
   switchStrategy: (id) => {
@@ -87,6 +105,7 @@ const creator = (set, get) => ({
     const docs = { ...s.docs, [s.activeId]: s.strategy }
     set({ docs, activeId: id, strategy: docs[id] })
     clearHistory()
+    resetPlayback()
   },
 
   renameStrategy: (id, name) => {
@@ -124,6 +143,7 @@ const creator = (set, get) => ({
       strategy: doc
     })
     clearHistory()
+    resetPlayback()
   },
 
   deleteStrategy: (id) => {
@@ -135,6 +155,7 @@ const creator = (set, get) => ({
     const activeId = id === s.activeId ? order[0] : s.activeId
     set({ docs, order, activeId, strategy: docs[activeId] })
     clearHistory()
+    resetPlayback()
   },
 
   // ---- UI state (persisted, not undoable) -------------------------------
@@ -158,6 +179,23 @@ const creator = (set, get) => ({
   // undo/redo history, but persisted so the view survives a reload.
   view: { zoom: 1, x: 0, y: 0 },
   setView: (patch) => set((s) => ({ view: { ...s.view, ...patch } })),
+
+  // Phase-animation playback. Transient — not persisted, not undoable.
+  // `t` is elapsed ms; `phaseId` is the phase being edited (null = Start).
+  playback: { ...PLAYBACK_INIT },
+  setPlayback: (patch) => set((s) => ({ playback: { ...s.playback, ...patch } })),
+  selectPhase: (id) =>
+    set((s) => {
+      const idx = s.strategy.phases.findIndex((p) => p.id === id)
+      return {
+        playback: {
+          ...s.playback,
+          phaseId: idx === -1 ? null : id,
+          playing: false,
+          t: idx === -1 ? 0 : phaseArrivalTime(s.strategy.phases, idx)
+        }
+      }
+    }),
 
   // Map fixtures (geese / trees / bulwarks / boss). App-level config, not part
   // of a strategy and not in undo history. Persisted so placement work is kept.
@@ -208,6 +246,7 @@ const creator = (set, get) => ({
       strategy: doc
     })
     clearHistory()
+    resetPlayback()
   },
 
   // ---- squads ------------------------------------------------------------
@@ -235,6 +274,10 @@ const creator = (set, get) => ({
     commit(set, get, (s) => {
       s.squads = s.squads.filter((q) => q.id !== id)
       s.players = s.players.filter((p) => p.squadId !== id)
+      for (const p of s.phases) {
+        delete p.board.squads[id]
+        delete p.paths[id]
+      }
     }),
 
   // ---- players (role slots) ------------------------------------------------
@@ -291,6 +334,7 @@ const creator = (set, get) => ({
   removeMarker: (id) =>
     commit(set, get, (s) => {
       s.markers = s.markers.filter((m) => m.id !== id)
+      for (const p of s.phases) delete p.board.markers[id]
     }),
   clearMarkers: () => commit(set, get, (s) => { s.markers = [] }),
 
@@ -359,6 +403,88 @@ const creator = (set, get) => ({
     commit(set, get, (s) => {
       const q = s.squads.find((x) => x.id === id)
       if (q) q.token = pos ? { x: pos.x, y: pos.y, at: Date.now() } : null
+    }),
+
+  // ---- planning phases (keyframe animation) ---------------------------
+  // Add a phase after `sourceId` (or at the end). Its board is a copy of the
+  // source phase, or a snapshot of the live board when there's no source.
+  addPhase: (sourceId = null) => {
+    const st = get()
+    const draft = structuredClone(st.strategy)
+    const id = newId('ph')
+    const srcIdx = sourceId ? draft.phases.findIndex((p) => p.id === sourceId) : -1
+    const board =
+      srcIdx !== -1
+        ? structuredClone(draft.phases[srcIdx].board)
+        : {
+            squads: Object.fromEntries(
+              draft.squads
+                .filter((q) => q.token)
+                .map((q) => [q.id, { x: q.token.x, y: q.token.y }])
+            ),
+            markers: Object.fromEntries(draft.markers.map((m) => [m.id, { x: m.x, y: m.y }])),
+            hiddenDrawings: [],
+            hiddenNotes: []
+          }
+    const phase = {
+      id,
+      name: `Phase ${draft.phases.length + 1}`,
+      duration: 2000,
+      hold: 0,
+      board,
+      paths: {}
+    }
+    draft.phases.splice(srcIdx === -1 ? draft.phases.length : srcIdx + 1, 0, phase)
+    draft.meta = { ...draft.meta, updatedAt: new Date().toISOString() }
+    set({
+      strategy: draft,
+      docs: { ...st.docs, [st.activeId]: draft }
+    })
+    get().selectPhase(id)
+  },
+
+  removePhase: (id) => {
+    commit(set, get, (s) => {
+      s.phases = s.phases.filter((p) => p.id !== id)
+    })
+    if (get().playback.phaseId === id) {
+      set((s) => ({ playback: { ...s.playback, phaseId: null, t: 0, playing: false } }))
+    }
+  },
+
+  renamePhase: (id, name) =>
+    commit(set, get, (s) => {
+      const p = s.phases.find((x) => x.id === id)
+      if (p) p.name = name
+    }),
+
+  setPhaseTiming: (id, patch) =>
+    commit(set, get, (s) => {
+      const p = s.phases.find((x) => x.id === id)
+      if (!p) return
+      if ('duration' in patch) p.duration = Math.max(0, Number(patch.duration) || 0)
+      if ('hold' in patch) p.hold = Math.max(0, Number(patch.hold) || 0)
+    }),
+
+  movePhase: (id, dir) =>
+    commit(set, get, (s) => {
+      const i = s.phases.findIndex((p) => p.id === id)
+      const j = i + dir
+      if (i === -1 || j < 0 || j >= s.phases.length) return
+      const [p] = s.phases.splice(i, 1)
+      s.phases.splice(j, 0, p)
+    }),
+
+  updatePhaseSquad: (phaseId, squadId, pos) =>
+    commit(set, get, (s) => {
+      const p = s.phases.find((x) => x.id === phaseId)
+      if (p) p.board.squads[squadId] = { x: Math.round(pos.x), y: Math.round(pos.y) }
+    }),
+
+  updatePhaseMarker: (phaseId, markerId, pos) =>
+    commit(set, get, (s) => {
+      const p = s.phases.find((x) => x.id === phaseId)
+      if (p) p.board.markers[markerId] = { x: Math.round(pos.x), y: Math.round(pos.y) }
     })
 })
 
@@ -376,7 +502,7 @@ export const useStore = create(
       name: STORAGE_KEY,
       // v3: strategy library. v4: two roster panels. v5: dropped dead
       // player.name/weapons + squad.leaderId — re-run migrate to strip them.
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => appStorage),
       partialize: (state) => ({
         docs: state.docs,

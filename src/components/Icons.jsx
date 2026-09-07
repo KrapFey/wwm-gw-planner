@@ -44,3 +44,15 @@ export const IconTrash = () => (
 )
 export const IconX = () => (<S><path d="M6 6l12 12M18 6 6 18" /></S>)
 export const IconCheck = () => (<S><path d="M5 12l5 5 9-11" /></S>)
+export const IconTimeline = () => (
+  <S>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+    <circle cx="9" cy="7" r="1.6" fill="currentColor" />
+    <circle cx="15" cy="12" r="1.6" fill="currentColor" />
+    <circle cx="8" cy="17" r="1.6" fill="currentColor" />
+  </S>
+)
+export const IconPlay = () => (<S><path d="M7 4l13 8-13 8z" fill="currentColor" /></S>)
+export const IconPause = () => (<S><path d="M7 4h4v16H7zM13 4h4v16h-4z" fill="currentColor" /></S>)
+export const IconSkipBack = () => (<S><path d="M18 5v14L8 12zM6 5v14" /></S>)
+export const IconSkipFwd = () => (<S><path d="M6 5v14l10-7zM18 5v14" /></S>)

@@ -763,6 +763,98 @@ select {
   align-items: center;
 }
 
+/* ---- planning phases bar ---------------------------------------- */
+.phases-bar {
+  position: absolute;
+  left: 12px;
+  right: 232px;
+  bottom: 12px;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 9px;
+  background: color-mix(in srgb, var(--surface-2) 94%, transparent);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(12px);
+}
+.pb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pb-transport {
+  display: flex;
+  gap: 2px;
+}
+.pb-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+}
+.pb-chip {
+  padding: 4px 9px;
+  font-size: 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pb-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.pb-chip.add {
+  border-style: dashed;
+  color: var(--text-dim);
+}
+.pb-scrub {
+  flex: 1;
+  min-width: 90px;
+  accent-color: var(--accent);
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+.pb-scrub:focus {
+  box-shadow: none;
+}
+.pb-time {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pb-speed {
+  padding: 3px 20px 3px 6px;
+  font-size: 11px;
+}
+.pb-timing {
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+  font-size: 11px;
+}
+.pb-timing label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+}
+.pb-timing input[type='number'] {
+  width: 52px;
+  padding: 3px 5px;
+}
+
 .dock-btn {
   width: 34px;
   height: 34px;

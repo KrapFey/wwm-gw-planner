@@ -13,10 +13,15 @@ const LETTER = { Tank: 'T', DPS: 'D', Healer: 'H' }
 // A whole team placed on the map as one draggable pill. The pill is
 // side-coded (blue border/glow = ours, red = enemy); the small dot + count
 // badge use the team's own accent so same-side teams stay distinguishable.
-export default function SquadToken({ squad }) {
+export default function SquadToken({ squad, override, onMove, onRemove, locked = false }) {
   const setSquadToken = useStore((s) => s.setSquadToken)
   const strategy = useStore((s) => s.strategy)
   const { fill, byRole } = squadStats(strategy, squad)
+
+  const move = onMove ?? ((pos) => setSquadToken(squad.id, pos))
+  const remove = onRemove ?? (() => setSquadToken(squad.id, null))
+  const x = override?.x ?? squad.token.x
+  const y = override?.y ?? squad.token.y
 
   const sideColor = SIDE_META[squad.side]?.color ?? '#888'
   const name = squad.name || 'Team'
@@ -39,15 +44,13 @@ export default function SquadToken({ squad }) {
 
   return (
     <Group
-      x={squad.token.x}
-      y={squad.token.y}
-      draggable
+      x={x}
+      y={y}
+      draggable={!locked}
       onDragStart={(e) => (e.cancelBubble = true)}
-      onDragEnd={(e) =>
-        setSquadToken(squad.id, clampToMap({ x: e.target.x(), y: e.target.y() }))
-      }
-      onDblClick={() => setSquadToken(squad.id, null)}
-      onDblTap={() => setSquadToken(squad.id, null)}
+      onDragEnd={(e) => move(clampToMap({ x: e.target.x(), y: e.target.y() }))}
+      onDblClick={locked ? undefined : remove}
+      onDblTap={locked ? undefined : remove}
     >
       {/* base + side wash */}
       <Rect

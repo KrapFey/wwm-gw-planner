@@ -38,6 +38,7 @@ If `esbuild` fails to run its postinstall in a locked-down npm, run once:
 | 4 | Tactical layer: markers, freehand/arrow drawing + eraser, sticky notes, timers | done |
 | — | UI/UX redesign + floating-dock layout; **named strategy library**; persisted collapse state; marker rotate/scale/label; drawing select+move; tool shortcuts (V/D/A/E); lint + tests + CI | done |
 | 5 | Deploy: Oracle VM + Caddy auto-HTTPS, push-to-deploy CI, map→WebP (2.9 MB → 0.3 MB), real PWA icons, latin-only font precache | done |
+| 6 | Planning-phase animation (increment 1): keyframe phases per strategy, timeline bar, eased playback of team pills + markers | done |
 
 ## Deploy
 
@@ -45,6 +46,17 @@ Static build — `npm run build` produces `dist/`, host it anywhere. Live setup 
 Oracle Cloud VM behind Caddy (auto-HTTPS via `sslip.io`); pushing to `main` builds
 and rsyncs `dist/` to the VM (`.github/workflows/deploy.yml`). Full runbook +
 `deploy/Caddyfile` + manual fallback in [`deploy/README.md`](deploy/README.md).
+
+## Planning-phase animation
+
+`strategy.phases` is an ordered list of keyframes; the live board is the "Start"
+frame. Open the timeline bar (dock button) → `+ Phase` snapshots the placed team
+pills + markers. Select a phase chip → the board shows that snapshot and drags
+edit *it*; select **Start** → drags edit the live board. Play eases every pill /
+marker between consecutive phases (`easeInOutCubic`), with per-phase transition
+and hold times. Pure interpolation is in `src/lib/playback.js`; `playback` is a
+transient store slice (not persisted, not undoable). Increments 2–4 (paths,
+per-phase visibility, polish) are not built yet.
 
 ## Strategy library
 

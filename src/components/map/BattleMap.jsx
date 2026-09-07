@@ -16,6 +16,8 @@ import MarkerInspector from './MarkerInspector.jsx'
 import DrawingShape from './DrawingShape.jsx'
 import AnnotationsOverlay from './AnnotationsOverlay.jsx'
 import LayoutEditorPanel from './LayoutEditorPanel.jsx'
+import PhasesBar from './PhasesBar.jsx'
+import { startFrame, frameAt, totalDuration } from '../../lib/playback.js'
 import {
   IconCursor,
   IconPencil,
@@ -25,6 +27,7 @@ import {
   IconNote,
   IconClock,
   IconLayers,
+  IconTimeline,
   IconPlus,
   IconMinus,
   IconFit
@@ -73,12 +76,18 @@ export default function BattleMap() {
   const squads = useStore((s) => s.strategy.squads)
   const markers = useStore((s) => s.strategy.markers)
   const drawings = useStore((s) => s.strategy.drawings)
+  const phases = useStore((s) => s.strategy.phases)
   const fixtures = useStore((s) => s.layout.fixtures)
   const view = useStore((s) => s.view)
+  const pb = useStore((s) => s.playback)
   const setView = useStore((s) => s.setView)
+  const setPlayback = useStore((s) => s.setPlayback)
+  const updatePhaseSquad = useStore((s) => s.updatePhaseSquad)
+  const updatePhaseMarker = useStore((s) => s.updatePhaseMarker)
   const setSquadToken = useStore((s) => s.setSquadToken)
   const clearTokens = useStore((s) => s.clearTokens)
   const addMarker = useStore((s) => s.addMarker)
+  const updateMarker = useStore((s) => s.updateMarker)
   const removeMarker = useStore((s) => s.removeMarker)
   const clearMarkers = useStore((s) => s.clearMarkers)
   const addDrawing = useStore((s) => s.addDrawing)
@@ -91,7 +100,20 @@ export default function BattleMap() {
     .filter((q) => q.token)
     .sort((a, b) => (a.token.at || 0) - (b.token.at || 0))
   const boardCount = placedSquads.length
-  const interactive = tool === 'select' && !editLayout
+  const interactive = tool === 'select' && !editLayout && !pb.playing
+
+  // Phase-animation frame: the interpolated board while the phase editor is
+  // open (null otherwise). Also gates which board a drag writes to.
+  const frame =
+    pb.open && phases.length
+      ? frameAt(startFrame(placedSquads, markers), phases, pb.t)
+      : null
+  const editingPhase = pb.open && pb.phaseId ? pb.phaseId : null
+
+  const onSquadMoved = (id, pos) =>
+    editingPhase ? updatePhaseSquad(editingPhase, id, pos) : setSquadToken(id, pos)
+  const onMarkerMoved = (id, pos) =>
+    editingPhase ? updatePhaseMarker(editingPhase, id, pos) : updateMarker(id, pos)
 
   useLayoutEffect(() => {
     const el = wrapRef.current
@@ -158,6 +180,30 @@ export default function BattleMap() {
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selMarker, selDrawing, editLayout])
+
+  // Phase playback clock — advances playback.t while playing.
+  useEffect(() => {
+    if (!pb.playing) return
+    const total = totalDuration(phases)
+    let raf
+    let last = performance.now()
+    const tick = (now) => {
+      const st = useStore.getState()
+      if (!st.playback.playing) return
+      const next = st.playback.t + (now - last) * (st.playback.speed || 1)
+      last = now
+      if (next >= total) {
+        if (st.playback.loop) setPlayback({ t: 0 })
+        else return setPlayback({ t: total, playing: false })
+      } else {
+        setPlayback({ t: next })
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pb.playing, phases])
 
   function zoomTo(newScale) {
     const oldScale = view.zoom
@@ -293,6 +339,19 @@ export default function BattleMap() {
     setTool('select')
     setDraft(null)
     draftRef.current = null
+    if (pb.open) setPlayback({ open: false, playing: false, phaseId: null, t: 0 })
+  }
+
+  function togglePhases() {
+    if (pb.open) {
+      setPlayback({ open: false, playing: false, phaseId: null, t: 0 })
+    } else {
+      setEditLayout(false)
+      setTool('select')
+      setSelMarker(null)
+      setSelDrawing(null)
+      setPlayback({ open: true, phaseId: null, playing: false, t: 0 })
+    }
   }
 
   return (
@@ -300,6 +359,7 @@ export default function BattleMap() {
       <div
         className={
           'stage-wrap' +
+          (pb.open ? ' phases-open' : '') +
           (editLayout
             ? ''
             : tool === 'erase'
@@ -321,7 +381,7 @@ export default function BattleMap() {
             scaleY={view.zoom}
             x={view.x}
             y={view.y}
-            draggable={tool === 'select'}
+            draggable={tool === 'select' && !pb.playing}
             onWheel={onWheel}
             onDragEnd={onStageDragEnd}
             onPointerDown={onPointerDown}
@@ -362,7 +422,13 @@ export default function BattleMap() {
               opacity={editLayout ? 0.35 : 1}
             >
               {placedSquads.map((q) => (
-                <SquadToken key={q.id} squad={q} />
+                <SquadToken
+                  key={q.id}
+                  squad={q}
+                  override={frame?.squads[q.id]}
+                  onMove={pb.open ? (pos) => onSquadMoved(q.id, pos) : undefined}
+                  locked={pb.playing}
+                />
               ))}
             </Layer>
 
@@ -375,6 +441,9 @@ export default function BattleMap() {
                   marker={m}
                   selected={m.id === selMarker}
                   onSelect={selectMarker}
+                  override={frame?.markers[m.id]}
+                  onMove={pb.open ? (pos) => onMarkerMoved(m.id, pos) : undefined}
+                  locked={pb.playing}
                 />
               ))}
             </Layer>
@@ -444,6 +513,13 @@ export default function BattleMap() {
               <IconClock />
             </button>
             <span className="dock-div" />
+            <button
+              className={'dock-btn' + (pb.open ? ' on' : '')}
+              onClick={togglePhases}
+              title="Plan phases (animation)"
+            >
+              <IconTimeline />
+            </button>
             <button className="dock-btn" onClick={toggleEditLayout} title="Edit map layout">
               <IconLayers />
             </button>
@@ -542,6 +618,8 @@ export default function BattleMap() {
             onDone={toggleEditLayout}
           />
         )}
+
+        {pb.open && <PhasesBar />}
       </div>
     </div>
   )

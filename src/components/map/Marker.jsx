@@ -9,11 +9,12 @@ const R = 15
 // A modern map-pin: coloured teardrop that can be rotated to aim, a crisp
 // vector icon that stays upright in the head, a ground shadow, and a compact
 // caption chip.
-export default function Marker({ marker, selected, onSelect }) {
+export default function Marker({ marker, selected, onSelect, override, onMove, locked = false }) {
   const updateMarker = useStore((s) => s.updateMarker)
   const removeMarker = useStore((s) => s.removeMarker)
   const def = MARKER_KINDS[marker.kind] ?? MARKER_KINDS.attack
 
+  const move = onMove ?? ((pos) => updateMarker(marker.id, pos))
   const sc = marker.scale || 1
   const rot = marker.rotation || 0
   const label = (marker.label ?? def.label).toUpperCase()
@@ -22,13 +23,11 @@ export default function Marker({ marker, selected, onSelect }) {
 
   return (
     <Group
-      x={marker.x}
-      y={marker.y}
-      draggable
+      x={override?.x ?? marker.x}
+      y={override?.y ?? marker.y}
+      draggable={!locked}
       onDragStart={(e) => (e.cancelBubble = true)}
-      onDragEnd={(e) =>
-        updateMarker(marker.id, clampToMap({ x: e.target.x(), y: e.target.y() }))
-      }
+      onDragEnd={(e) => move(clampToMap({ x: e.target.x(), y: e.target.y() }))}
       onClick={(e) => {
         e.cancelBubble = true
         onSelect?.(marker.id)
@@ -37,8 +36,8 @@ export default function Marker({ marker, selected, onSelect }) {
         e.cancelBubble = true
         onSelect?.(marker.id)
       }}
-      onDblClick={() => removeMarker(marker.id)}
-      onDblTap={() => removeMarker(marker.id)}
+      onDblClick={locked ? undefined : () => removeMarker(marker.id)}
+      onDblTap={locked ? undefined : () => removeMarker(marker.id)}
     >
       <Ellipse
         x={0}
