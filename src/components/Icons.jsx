@@ -15,8 +15,9 @@ export const IconArrow = () => (
 )
 export const IconEraser = () => (
   <S>
-    <path d="M9 20H4.5l-1-1a2 2 0 0 1 0-3L13.5 6.5a2 2 0 0 1 3 0l4 4a2 2 0 0 1 0 3L15 19" />
-    <path d="M8.5 11.5 15 18" />
+    <path d="M7 21 3.7 17.7a2.4 2.4 0 0 1 0-3.4l8.6-8.6a2.4 2.4 0 0 1 3.4 0l4.6 4.6a2.4 2.4 0 0 1 0 3.4L14 21z" />
+    <path d="M21 21H7" />
+    <path d="m5 13 6 6" />
   </S>
 )
 export const IconNote = () => (
