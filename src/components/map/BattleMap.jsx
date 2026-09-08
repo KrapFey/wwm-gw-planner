@@ -11,7 +11,8 @@ import {
   SHAPE_TOOLS,
   SHAPE_META,
   BOX_DRAW_TOOLS,
-  drawingPolyline
+  drawingPolyline,
+  reduceCurvedArrow
 } from '../../lib/tacticalDefs.js'
 import MapImage from './MapImage.jsx'
 import FixtureSprite from './FixtureSprite.jsx'
@@ -420,11 +421,18 @@ export default function BattleMap() {
     const d = draftRef.current
     draftRef.current = null
     if (d) {
-      const enough = BOX_DRAW_TOOLS.includes(d.tool)
-        ? d.points.length >= 4 &&
-          Math.hypot(d.points[2] - d.points[0], d.points[3] - d.points[1]) > 6
-        : d.points.length >= 6
-      if (enough) addDrawing(d)
+      if (d.tool === 'carrow') {
+        // drawn like the pen (an arc); reduce to start / apex / end
+        const n = d.points.length
+        const span = Math.hypot(d.points[n - 2] - d.points[0], d.points[n - 1] - d.points[1])
+        if (n >= 6 && span > 6) addDrawing({ ...d, points: reduceCurvedArrow(d.points) })
+      } else {
+        const enough = BOX_DRAW_TOOLS.includes(d.tool)
+          ? d.points.length >= 4 &&
+            Math.hypot(d.points[2] - d.points[0], d.points[3] - d.points[1]) > 6
+          : d.points.length >= 6
+        if (enough) addDrawing(d)
+      }
     }
     setDraft(null)
   }

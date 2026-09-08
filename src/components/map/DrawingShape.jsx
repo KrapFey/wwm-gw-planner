@@ -1,12 +1,14 @@
-import { Group, Line, Arrow, Rect, Ellipse } from 'react-konva'
+import { Group, Line, Arrow, Rect, Ellipse, Circle } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
-import { SHAPE_TOOLS, withAlpha, curvedArrowControl } from '../../lib/tacticalDefs.js'
+import { SHAPE_TOOLS, withAlpha, curvedArrowAnchors } from '../../lib/tacticalDefs.js'
 
-// One committed drawing: freehand line, arrow, or a basic shape (rounded
-// rectangle / ellipse / triangle / straight line). Shapes store a 2-point
-// bounding box in `points` = [x1, y1, x2, y2]. `live` renders the in-progress
-// stroke (non-interactive). In select mode a drawing can be selected and
-// dragged; double-click removes it.
+// One committed drawing: freehand line, straight/curved arrow, or a basic shape
+// (rounded rectangle / ellipse / triangle / straight line). Shapes + straight
+// arrow store a 2-point bounding box in `points`; a curved arrow stores
+// [start, apex, end] (6 numbers) and, when selected, shows a handle to drag the
+// apex — moving it across the chord flips the curve. `live` renders the
+// in-progress stroke (non-interactive). In select mode a drawing can be selected
+// and dragged; double-click removes it.
 export default function DrawingShape({ drawing, live = false, selected = false, onSelect }) {
   const removeDrawing = useStore((s) => s.removeDrawing)
   const updateDrawing = useStore((s) => s.updateDrawing)
@@ -70,17 +72,44 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
       return <Arrow {...common} fill={drawing.color} pointerLength={head} pointerWidth={head} />
     }
     if (drawing.tool === 'carrow') {
-      const [x1, y1, x2, y2] = drawing.points
-      const [cx, cy] = curvedArrowControl(drawing.points)
-      return (
+      // live: show the raw arc being dragged. committed: spline start→apex→end.
+      if (live) {
+        return (
+          <Arrow {...common} tension={0.4} fill={drawing.color} pointerLength={head} pointerWidth={head} />
+        )
+      }
+      const [x1, y1, ax, ay, x2, y2] = curvedArrowAnchors(drawing.points)
+      const arrow = (
         <Arrow
           {...common}
-          points={[x1, y1, cx, cy, x2, y2]}
+          points={[x1, y1, ax, ay, x2, y2]}
           tension={0.5}
           fill={drawing.color}
           pointerLength={head}
           pointerWidth={head}
         />
+      )
+      if (!selected) return arrow
+      // drag this handle to reshape / flip the curve
+      return (
+        <Group>
+          {arrow}
+          <Circle
+            x={ax}
+            y={ay}
+            radius={7}
+            fill="#fff"
+            stroke="#7c6cff"
+            strokeWidth={2}
+            draggable
+            onDragStart={(e) => (e.cancelBubble = true)}
+            onDragEnd={(e) =>
+              updateDrawing(drawing.id, {
+                points: [x1, y1, e.target.x(), e.target.y(), x2, y2]
+              })
+            }
+          />
+        </Group>
       )
     }
     return <Line {...common} tension={0.35} />
