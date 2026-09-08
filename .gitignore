@@ -23,3 +23,5 @@ npm-debug.log*
 # scratch (local screenshots / seeds used during dev)
 .shot*.png
 public/__seed.html
+
+TODO.md
