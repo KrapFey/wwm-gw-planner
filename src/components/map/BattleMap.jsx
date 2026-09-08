@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Stage, Layer, Line as KLine } from 'react-konva'
+import { Stage, Layer, Group, Circle, Line as KLine } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { MAP_W, MAP_H, clampToMap } from '../../lib/mapLayout.js'
 import {
@@ -23,7 +23,7 @@ import DrawingShape from './DrawingShape.jsx'
 import AnnotationsOverlay from './AnnotationsOverlay.jsx'
 import LayoutEditorPanel from './LayoutEditorPanel.jsx'
 import PhasesBar from './PhasesBar.jsx'
-import { startFrame, frameAt, totalDuration } from '../../lib/playback.js'
+import { startFrame, frameAt, totalDuration, phaseArrivalTime } from '../../lib/playback.js'
 import {
   IconCursor,
   IconPencil,
@@ -171,12 +171,23 @@ export default function BattleMap() {
 
   // Phase-animation frame: the interpolated board while the phase editor is
   // open (null otherwise). Also gates which board a drag writes to.
-  const frame =
-    pb.open && phases.length
-      ? frameAt(startFrame(placedSquads, markers), phases, pb.t, pathPolys)
-      : null
-  // faint motion trail: source position of whatever is animating right now
-  const trailFrom = frame && (pb.playing || pb.t > 0) ? frame.fromSquads : null
+  const sf = pb.open && phases.length ? startFrame(placedSquads, markers) : null
+  const frame = sf ? frameAt(sf, phases, pb.t, pathPolys) : null
+  const scrubbing = frame && (pb.playing || pb.t > 0)
+  // onion skin: faint squad positions at the keyframes on either side of the
+  // one currently animating, plus a route line through them.
+  const onion = scrubbing
+    ? {
+        prev:
+          frame.phaseIndex > 0
+            ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex - 1), pathPolys).squads
+            : sf.squads,
+        next:
+          frame.phaseIndex < phases.length - 1
+            ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex + 1), pathPolys).squads
+            : null
+      }
+    : null
   const editingPhase = pb.open && pb.phaseId ? pb.phaseId : null
 
   const onSquadMoved = (id, pos) =>
@@ -818,26 +829,52 @@ export default function BattleMap() {
               {draft && <DrawingShape drawing={{ ...draft, id: 'draft' }} live />}
             </Layer>
 
-            {trailFrom && (
+            {onion && (
               <Layer listening={false}>
                 {placedSquads.map((q) => {
-                  const a = trailFrom[q.id]
-                  const b = frame.squads[q.id]
-                  if (!a || !b || frame.hiddenSquads?.has(q.id)) return null
-                  if (Math.hypot(b.x - a.x, b.y - a.y) < 4) return null
+                  if (frame.hiddenSquads?.has(q.id)) return null
+                  const cur = frame.squads[q.id]
+                  const p = onion.prev?.[q.id]
+                  const n = onion.next?.[q.id]
+                  if (!cur) return null
+                  const moves =
+                    (p && Math.hypot(cur.x - p.x, cur.y - p.y) > 4) ||
+                    (n && Math.hypot(n.x - cur.x, n.y - cur.y) > 4)
+                  if (!moves) return null
+                  const route = []
+                  if (p) route.push(p.x, p.y)
+                  route.push(cur.x, cur.y)
+                  if (n) route.push(n.x, n.y)
+                  const ghost = (pt, key) =>
+                    pt ? (
+                      <Circle
+                        key={key}
+                        x={pt.x}
+                        y={pt.y}
+                        radius={11}
+                        fill={q.color}
+                        opacity={0.45}
+                        stroke="#0c0e12"
+                        strokeWidth={1.5}
+                      />
+                    ) : null
                   return (
-                    <KLine
-                      key={q.id}
-                      points={[a.x, a.y, b.x, b.y]}
-                      stroke={q.color}
-                      strokeWidth={5}
-                      opacity={0.75}
-                      lineCap="round"
-                      dash={[10, 8]}
-                      shadowColor={q.color}
-                      shadowBlur={8}
-                      shadowOpacity={0.6}
-                    />
+                    <Group key={q.id}>
+                      <KLine
+                        points={route}
+                        stroke={q.color}
+                        strokeWidth={4}
+                        opacity={0.9}
+                        lineCap="round"
+                        lineJoin="round"
+                        dash={[10, 7]}
+                        shadowColor={q.color}
+                        shadowBlur={6}
+                        shadowOpacity={0.5}
+                      />
+                      {ghost(p, 'p')}
+                      {ghost(n, 'n')}
+                    </Group>
                   )
                 })}
               </Layer>

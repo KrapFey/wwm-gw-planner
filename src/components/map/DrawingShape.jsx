@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Group, Line, Arrow, Rect, Ellipse, Circle } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { SHAPE_TOOLS, withAlpha, curvedArrowAnchors } from '../../lib/tacticalDefs.js'
@@ -12,6 +13,8 @@ import { SHAPE_TOOLS, withAlpha, curvedArrowAnchors } from '../../lib/tacticalDe
 export default function DrawingShape({ drawing, live = false, selected = false, onSelect }) {
   const removeDrawing = useStore((s) => s.removeDrawing)
   const updateDrawing = useStore((s) => s.updateDrawing)
+  // live apex position while the curved-arrow handle is being dragged
+  const [dragApex, setDragApex] = useState(null)
 
   const isShape = SHAPE_TOOLS.includes(drawing.tool)
   // a shape needs both corners before there's anything to draw
@@ -72,42 +75,70 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
       return <Arrow {...common} fill={drawing.color} pointerLength={head} pointerWidth={head} />
     }
     if (drawing.tool === 'carrow') {
-      // live: show the raw arc being dragged. committed: spline start→apex→end.
+      // live: show the raw arc being dragged.
       if (live) {
         return (
           <Arrow {...common} tension={0.4} fill={drawing.color} pointerLength={head} pointerWidth={head} />
         )
       }
-      const [x1, y1, ax, ay, x2, y2] = curvedArrowAnchors(drawing.points)
-      const arrow = (
-        <Arrow
-          {...common}
-          points={[x1, y1, ax, ay, x2, y2]}
-          tension={0.5}
-          fill={drawing.color}
-          pointerLength={head}
-          pointerWidth={head}
-        />
-      )
-      if (!selected) return arrow
-      // drag this handle to reshape / flip the curve
+      const [x1, y1, storedAx, storedAy, x2, y2] = curvedArrowAnchors(drawing.points)
+      // while the apex handle is being dragged the curve follows it live
+      const ax = dragApex ? dragApex.x : storedAx
+      const ay = dragApex ? dragApex.y : storedAy
+      const curvePts = [x1, y1, ax, ay, x2, y2]
+
+      if (!selected) {
+        return (
+          <Arrow
+            {...common}
+            points={curvePts}
+            tension={0.5}
+            fill={drawing.color}
+            pointerLength={head}
+            pointerWidth={head}
+          />
+        )
+      }
+      // selected: Group is draggable (whole-move, folds offset into points);
+      // the apex handle drags independently to reshape / flip the curve.
       return (
-        <Group>
-          {arrow}
+        <Group {...interaction}>
+          <Arrow
+            id={drawing.id}
+            name="drawing"
+            {...stroke}
+            points={curvePts}
+            tension={0.5}
+            fill={drawing.color}
+            pointerLength={head}
+            pointerWidth={head}
+          />
           <Circle
-            x={ax}
-            y={ay}
-            radius={7}
+            x={storedAx}
+            y={storedAy}
+            radius={9}
             fill="#fff"
             stroke="#7c6cff"
-            strokeWidth={2}
+            strokeWidth={2.5}
+            shadowColor="#000"
+            shadowBlur={4}
+            shadowOpacity={0.4}
             draggable
-            onDragStart={(e) => (e.cancelBubble = true)}
-            onDragEnd={(e) =>
-              updateDrawing(drawing.id, {
-                points: [x1, y1, e.target.x(), e.target.y(), x2, y2]
-              })
-            }
+            onDragStart={(e) => {
+              e.cancelBubble = true
+              setDragApex({ x: e.target.x(), y: e.target.y() })
+            }}
+            onDragMove={(e) => {
+              e.cancelBubble = true
+              setDragApex({ x: e.target.x(), y: e.target.y() })
+            }}
+            onDragEnd={(e) => {
+              e.cancelBubble = true
+              const nx = e.target.x()
+              const ny = e.target.y()
+              setDragApex(null)
+              updateDrawing(drawing.id, { points: [x1, y1, nx, ny, x2, y2] })
+            }}
           />
         </Group>
       )
