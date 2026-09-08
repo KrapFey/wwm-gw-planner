@@ -174,19 +174,12 @@ export default function BattleMap() {
   const sf = pb.open && phases.length ? startFrame(placedSquads, markers) : null
   const frame = sf ? frameAt(sf, phases, pb.t, pathPolys) : null
   const scrubbing = frame && (pb.playing || pb.t > 0)
-  // onion skin: faint squad positions at the keyframes on either side of the
-  // one currently animating, plus a route line through them.
-  const onion = scrubbing
-    ? {
-        prev:
-          frame.phaseIndex > 0
-            ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex - 1), pathPolys).squads
-            : sf.squads,
-        next:
-          frame.phaseIndex < phases.length - 1
-            ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex + 1), pathPolys).squads
-            : null
-      }
+  // motion trail: each squad's position at the start of the phase now animating
+  // (previous keyframe, or the live Start frame) -> a dashed line to where it is.
+  const trailFrom = scrubbing
+    ? frame.phaseIndex > 0
+      ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex - 1), pathPolys).squads
+      : sf.squads
     : null
   const editingPhase = pb.open && pb.phaseId ? pb.phaseId : null
 
@@ -829,51 +822,36 @@ export default function BattleMap() {
               {draft && <DrawingShape drawing={{ ...draft, id: 'draft' }} live />}
             </Layer>
 
-            {onion && (
+            {trailFrom && (
               <Layer listening={false}>
                 {placedSquads.map((q) => {
                   if (frame.hiddenSquads?.has(q.id)) return null
                   const cur = frame.squads[q.id]
-                  const p = onion.prev?.[q.id]
-                  const n = onion.next?.[q.id]
-                  if (!cur) return null
-                  const moves =
-                    (p && Math.hypot(cur.x - p.x, cur.y - p.y) > 4) ||
-                    (n && Math.hypot(n.x - cur.x, n.y - cur.y) > 4)
-                  if (!moves) return null
-                  const route = []
-                  if (p) route.push(p.x, p.y)
-                  route.push(cur.x, cur.y)
-                  if (n) route.push(n.x, n.y)
-                  const ghost = (pt, key) =>
-                    pt ? (
+                  const from = trailFrom[q.id]
+                  if (!cur || !from) return null
+                  if (Math.hypot(cur.x - from.x, cur.y - from.y) < 4) return null
+                  return (
+                    <Group key={q.id}>
+                      <KLine
+                        points={[from.x, from.y, cur.x, cur.y]}
+                        stroke={q.color}
+                        strokeWidth={4}
+                        opacity={0.9}
+                        lineCap="round"
+                        dash={[10, 7]}
+                        shadowColor={q.color}
+                        shadowBlur={6}
+                        shadowOpacity={0.5}
+                      />
                       <Circle
-                        key={key}
-                        x={pt.x}
-                        y={pt.y}
+                        x={from.x}
+                        y={from.y}
                         radius={11}
                         fill={q.color}
                         opacity={0.45}
                         stroke="#0c0e12"
                         strokeWidth={1.5}
                       />
-                    ) : null
-                  return (
-                    <Group key={q.id}>
-                      <KLine
-                        points={route}
-                        stroke={q.color}
-                        strokeWidth={4}
-                        opacity={0.9}
-                        lineCap="round"
-                        lineJoin="round"
-                        dash={[10, 7]}
-                        shadowColor={q.color}
-                        shadowBlur={6}
-                        shadowOpacity={0.5}
-                      />
-                      {ghost(p, 'p')}
-                      {ghost(n, 'n')}
                     </Group>
                   )
                 })}
