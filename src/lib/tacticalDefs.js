@@ -22,7 +22,7 @@ export const DRAW_WIDTHS = [
 // Drawing tools whose geometry is a 2-point bounding box (start + end corner),
 // as opposed to the freehand pen. Arrow is box-like too but rendered as a line.
 export const SHAPE_TOOLS = ['rect', 'ellipse', 'triangle', 'line']
-export const BOX_DRAW_TOOLS = ['arrow', ...SHAPE_TOOLS]
+export const BOX_DRAW_TOOLS = ['arrow', 'carrow', ...SHAPE_TOOLS]
 
 export const SHAPE_META = {
   rect: { label: 'Rectangle' },
@@ -34,6 +34,7 @@ export const SHAPE_META = {
 export const DRAW_TOOL_LABEL = {
   pen: 'Line',
   arrow: 'Arrow',
+  carrow: 'Curve',
   rect: 'Box',
   ellipse: 'Oval',
   triangle: 'Triangle',

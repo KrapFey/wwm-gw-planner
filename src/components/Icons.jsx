@@ -13,6 +13,9 @@ export const IconPencil = () => (
 export const IconArrow = () => (
   <S><path d="M7 17 17 7" /><path d="M8 7h9v9" /></S>
 )
+export const IconArrowCurve = () => (
+  <S><path d="M4 18C4 10 9 5 19 5" /><path d="M14 3l5 2-2 5" /></S>
+)
 export const IconEraser = () => (
   <S>
     <path d="M7 21 3.7 17.7a2.4 2.4 0 0 1 0-3.4l8.6-8.6a2.4 2.4 0 0 1 3.4 0l4.6 4.6a2.4 2.4 0 0 1 0 3.4L14 21z" />
@@ -42,6 +45,9 @@ export const IconLayers = () => (
 )
 export const IconTrash = () => (
   <S><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M6 7l1 13h10l1-13" /></S>
+)
+export const IconCopy = () => (
+  <S><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M6 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2" /></S>
 )
 export const IconX = () => (<S><path d="M6 6l12 12M18 6 6 18" /></S>)
 export const IconCheck = () => (<S><path d="M5 12l5 5 9-11" /></S>)

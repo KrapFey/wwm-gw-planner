@@ -551,10 +551,22 @@ select {
 
 .squad > header {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 8px;
   padding: 9px 10px;
+}
+.squad > header .dup {
+  color: var(--text-faint);
+  padding: 3px;
+}
+.squad > header .dup:hover {
+  color: var(--accent-2);
+  background: transparent;
+}
+.squad > header .dup svg {
+  width: 13px;
+  height: 13px;
 }
 
 .caret {
@@ -1376,10 +1388,20 @@ select {
   }
 }
 
-/* free up room for the canvas toolbar on smaller desktops */
+/* on smaller desktops the canvas toolbar gets its own full-width row */
 @media (max-width: 1500px) {
   .topbar .hint {
     display: none;
+  }
+  .topbar .tb-tools-div {
+    display: none;
+  }
+  .topbar-tools {
+    order: 5;
+    flex-basis: 100%;
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
   }
 }
 

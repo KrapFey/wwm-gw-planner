@@ -1,12 +1,14 @@
 import { useStore } from '../../store/useStore.js'
 import { ROLES, LANES, SQUAD_SIZE_PRESETS } from '../../lib/schema.js'
 import { squadStats, squadLabel, ROLE_ICON } from '../../lib/selectors.js'
+import { IconCopy } from '../Icons.jsx'
 import PlayerRow from './PlayerRow.jsx'
 
 export default function SquadCard({ squad }) {
   const strategy = useStore((s) => s.strategy)
   const updateSquad = useStore((s) => s.updateSquad)
   const removeSquad = useStore((s) => s.removeSquad)
+  const duplicateSquad = useStore((s) => s.duplicateSquad)
   const addPlayer = useStore((s) => s.addPlayer)
   const open = useStore((s) => !s.ui.collapsedTeams[squad.id])
   const toggleTeam = useStore((s) => s.toggleTeam)
@@ -50,6 +52,14 @@ export default function SquadCard({ squad }) {
             {fill}/{squad.targetSize}
           </span>
         </span>
+
+        <button
+          className="tiny ghost dup"
+          title="Duplicate this team"
+          onClick={() => duplicateSquad(squad.id)}
+        >
+          <IconCopy />
+        </button>
 
         <button
           className="tiny ghost rm"

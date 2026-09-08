@@ -62,16 +62,30 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
     shadowOpacity: selected ? 0.9 : 0
   }
 
-  // ---- freehand + arrow: single node, points are absolute (x/y = 0) ----
+  // ---- freehand + arrows: single node, points are absolute (x/y = 0) ----
   if (!isShape) {
     const common = { id: drawing.id, name: 'drawing', points: drawing.points, ...stroke, ...interaction }
+    const head = Math.max(10, drawing.width * 2.2)
     if (drawing.tool === 'arrow') {
+      return <Arrow {...common} fill={drawing.color} pointerLength={head} pointerWidth={head} />
+    }
+    if (drawing.tool === 'carrow') {
+      // bow a control point out perpendicular to the chord for a curved arrow
+      const [x1, y1, x2, y2] = drawing.points
+      const dx = x2 - x1
+      const dy = y2 - y1
+      const len = Math.hypot(dx, dy) || 1
+      const bow = len * 0.22
+      const cx = (x1 + x2) / 2 - (dy / len) * bow
+      const cy = (y1 + y2) / 2 + (dx / len) * bow
       return (
         <Arrow
           {...common}
+          points={[x1, y1, cx, cy, x2, y2]}
+          tension={0.5}
           fill={drawing.color}
-          pointerLength={Math.max(10, drawing.width * 2.2)}
-          pointerWidth={Math.max(10, drawing.width * 2.2)}
+          pointerLength={head}
+          pointerWidth={head}
         />
       )
     }

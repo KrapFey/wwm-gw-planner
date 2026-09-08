@@ -280,6 +280,20 @@ const creator = (set, get) => ({
       if (q) Object.assign(q, patch)
     }),
 
+  // Copy a team (same side + category) with its player slots, inserted right
+  // after the source. Not placed on the map.
+  duplicateSquad: (id) =>
+    commit(set, get, (s) => {
+      const i = s.squads.findIndex((q) => q.id === id)
+      if (i === -1) return
+      const src = s.squads[i]
+      const nid = newId('sq')
+      s.squads.splice(i + 1, 0, { ...src, id: nid, token: null })
+      for (const p of s.players.filter((p) => p.squadId === id)) {
+        s.players.push({ id: newId('pl'), side: p.side, role: p.role, squadId: nid })
+      }
+    }),
+
   removeSquad: (id) =>
     commit(set, get, (s) => {
       s.squads = s.squads.filter((q) => q.id !== id)

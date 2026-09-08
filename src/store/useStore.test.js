@@ -83,6 +83,23 @@ describe('team + marker store logic', () => {
     expect(S().strategy.players).toHaveLength(0)
   })
 
+  it('duplicateSquad copies the team + players right after it, unplaced', () => {
+    S().addSquad('ally', 'attack')
+    const qid = S().strategy.squads[0].id
+    S().addPlayer('ally', qid, { role: 'Tank' })
+    S().addPlayer('ally', qid, { role: 'Healer' })
+    S().setSquadToken(qid, { x: 5, y: 5 })
+    S().addSquad('ally', 'attack') // a second team after the source
+    S().duplicateSquad(qid)
+    const sq = S().strategy.squads
+    expect(sq).toHaveLength(3)
+    expect(sq[1].id).not.toBe(qid) // dup inserted at index 1
+    expect(sq[1].category).toBe('attack')
+    expect(sq[1].token).toBeNull()
+    expect(S().strategy.players.filter((p) => p.squadId === sq[1].id).map((p) => p.role))
+      .toEqual(['Tank', 'Healer'])
+  })
+
   it('setSquadToken stamps token.at so the newest sorts last', () => {
     S().addSquad('ally')
     S().addSquad('ally')

@@ -26,6 +26,7 @@ import {
   IconCursor,
   IconPencil,
   IconArrow,
+  IconArrowCurve,
   IconEraser,
   IconFlag,
   IconNote,
@@ -59,6 +60,7 @@ const SHORTCUTS = [
   ['V', 'Select / pan'],
   ['D', 'Freehand draw'],
   ['A', 'Arrow'],
+  ['G', 'Curved arrow'],
   ['R', 'Rectangle'],
   ['C', 'Ellipse'],
   ['T', 'Triangle'],
@@ -228,6 +230,7 @@ export default function BattleMap() {
       if (k === 'v') setTool('select')
       else if (k === 'd') setTool('pen')
       else if (k === 'a') setTool('arrow')
+      else if (k === 'g') setTool('carrow')
       else if (k === 'e') setTool('erase')
       else if (k === 'r') setTool('rect')
       else if (k === 'c') setTool('ellipse')
@@ -441,6 +444,13 @@ export default function BattleMap() {
                 title="Arrow (A)"
               >
                 <IconArrow />
+              </button>
+              <button
+                className={'dock-btn' + (tool === 'carrow' ? ' on' : '')}
+                onClick={() => setTool('carrow')}
+                title="Curved arrow (G)"
+              >
+                <IconArrowCurve />
               </button>
               <div className="ctb-menu">
                 <button

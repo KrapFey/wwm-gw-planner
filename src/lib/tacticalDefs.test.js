@@ -19,8 +19,8 @@ describe('withAlpha', () => {
 })
 
 describe('draw tool tables', () => {
-  it('arrow + shapes are box-drawn; pen is not', () => {
-    expect(BOX_DRAW_TOOLS).toEqual(['arrow', ...SHAPE_TOOLS])
+  it('arrows + shapes are box-drawn; pen is not', () => {
+    expect(BOX_DRAW_TOOLS).toEqual(['arrow', 'carrow', ...SHAPE_TOOLS])
     expect(BOX_DRAW_TOOLS).not.toContain('pen')
   })
   it('every shape tool has a label', () => {
