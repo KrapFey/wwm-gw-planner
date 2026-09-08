@@ -73,7 +73,11 @@ export default function TopBar() {
         </button>
       </div>
 
-      <div className="spacer" />
+      <div className="divider" />
+      {/* BattleMap portals its canvas toolbar in here; it flex-grows to fill
+          the free space between undo/redo and the status area */}
+      <div className="topbar-tools" id="canvas-toolbar-slot" />
+
       <span className="hint">Autosaves locally</span>
       <div className="divider" />
 

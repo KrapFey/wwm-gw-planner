@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Stage, Layer } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { MAP_W, MAP_H, clampToMap } from '../../lib/mapLayout.js'
@@ -88,6 +89,12 @@ export default function BattleMap() {
   const [clearMenu, setClearMenu] = useState(false)
   const [selMarker, setSelMarker] = useState(null)
   const [selDrawing, setSelDrawing] = useState(null)
+  const [toolbarSlot, setToolbarSlot] = useState(null)
+
+  // the canvas toolbar renders up in the top bar
+  useEffect(() => {
+    setToolbarSlot(document.getElementById('canvas-toolbar-slot'))
+  }, [])
 
   const isShapeTool = SHAPE_TOOLS.includes(tool)
 
@@ -408,8 +415,9 @@ export default function BattleMap() {
 
   return (
     <div className="map">
-      {/* ---- canvas toolbar ---- */}
-      <div className="canvas-toolbar">
+      {toolbarSlot &&
+        createPortal(
+          <div className="canvas-toolbar">
         {!editLayout && (
           <>
             <div className="ctb-group">
@@ -545,40 +553,13 @@ export default function BattleMap() {
               </button>
             </div>
 
-            {(tool === 'pen' || tool === 'arrow' || isShapeTool) && (
-              <>
-                <span className="ctb-div" />
-                <div className="ctb-group ctb-draw">
-                  {DRAW_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      className={'swatch' + (drawColor === c ? ' on' : '')}
-                      style={{ background: c }}
-                      onClick={() => setDrawColor(c)}
-                      title="Colour"
-                    />
-                  ))}
-                  <span className="ctb-div" />
-                  {DRAW_WIDTHS.map((w) => (
-                    <button
-                      key={w.value}
-                      className={'tiny' + (drawWidth === w.value ? ' primary' : ' ghost')}
-                      onClick={() => setDrawWidth(w.value)}
-                    >
-                      {w.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
           </>
         )}
-
-        <span className="ctb-spacer" />
 
         {!editLayout &&
           (boardCount > 0 || markers.length > 0 || drawings.length > 0) && (
             <>
+              <span className="ctb-div" />
               <div className="ctb-menu">
                 <button
                   className={'dock-btn' + (clearMenu ? ' on' : '')}
@@ -625,10 +606,36 @@ export default function BattleMap() {
                   </div>
                 )}
               </div>
-              <span className="ctb-div" />
             </>
           )}
 
+        <span className="ctb-spacer" />
+        {!editLayout && (tool === 'pen' || tool === 'arrow' || isShapeTool) && (
+          <div className="ctb-group ctb-draw">
+            {DRAW_COLORS.map((c) => (
+              <button
+                key={c}
+                className={'swatch' + (drawColor === c ? ' on' : '')}
+                style={{ background: c }}
+                onClick={() => setDrawColor(c)}
+                title="Colour"
+              />
+            ))}
+            <span className="ctb-div" />
+            {DRAW_WIDTHS.map((w) => (
+              <button
+                key={w.value}
+                className={'tiny' + (drawWidth === w.value ? ' primary' : ' ghost')}
+                onClick={() => setDrawWidth(w.value)}
+              >
+                {w.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <span className="ctb-spacer" />
+
+        <span className="ctb-div" />
         <div className="ctb-group">
           <button className="dock-btn" onClick={() => zoomBy(1 / 1.2)} title="Zoom out">
             <IconMinus />
@@ -669,7 +676,9 @@ export default function BattleMap() {
             </div>
           </>
         )}
-      </div>
+          </div>,
+          toolbarSlot
+        )}
 
       <div
         className={
