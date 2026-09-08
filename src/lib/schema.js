@@ -63,6 +63,7 @@ export const pillColor = (side = 'ally', category = 'attack') =>
 export function makeSquad({
   side,
   category = 'attack',
+  name = '',
   lane = 'Unassigned',
   targetSize = DEFAULT_SQUAD_SIZE,
   color
@@ -71,6 +72,7 @@ export function makeSquad({
     id: undefined, // filled by store
     side,
     category: normalizeCategory(category),
+    name, // '' = show the derived default name; user may override
     lane,
     targetSize,
     color: color ?? squadColorForIndex(0, side),
@@ -164,6 +166,7 @@ export function migrateStrategy(input) {
         id: q.id,
         side: q.side === 'enemy' ? 'enemy' : 'ally',
         category: normalizeCategory(q.category, q.name),
+        name: typeof q.name === 'string' ? q.name : '',
         lane: q.lane ?? 'Unassigned',
         targetSize: Number(q.targetSize) || DEFAULT_SQUAD_SIZE,
         color: q.color ?? squadColorForIndex(0, q.side),

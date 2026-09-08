@@ -1,6 +1,6 @@
 import { useStore } from '../../store/useStore.js'
 import { ROLES, LANES, SQUAD_SIZE_PRESETS } from '../../lib/schema.js'
-import { squadStats, squadLabel, ROLE_ICON } from '../../lib/selectors.js'
+import { squadStats, squadLabel, squadDefaultName, ROLE_ICON } from '../../lib/selectors.js'
 import { IconCopy } from '../Icons.jsx'
 import PlayerRow from './PlayerRow.jsx'
 
@@ -16,6 +16,7 @@ export default function SquadCard({ squad }) {
   const { players, byRole, fill, over, warnings } = squadStats(strategy, squad)
   const pct = Math.min(100, squad.targetSize ? (fill / squad.targetSize) * 100 : 0)
   const label = squadLabel(strategy, squad)
+  const defaultName = squadDefaultName(strategy, squad)
 
   return (
     <div className="squad" style={{ borderLeftColor: squad.color }}>
@@ -40,9 +41,15 @@ export default function SquadCard({ squad }) {
         >
           ⠿
         </span>
-        <span className="name" title="Team name is set automatically">
-          {label}
-        </span>
+        <input
+          className="name"
+          value={squad.name ?? ''}
+          placeholder={defaultName}
+          onChange={(e) => updateSquad(squad.id, { name: e.target.value })}
+          onBlur={(e) => updateSquad(squad.id, { name: e.target.value.trim() })}
+          aria-label="Team name"
+          title="Rename this team (leave blank for the default)"
+        />
 
         <span className={'fill' + (over ? ' over' : '')} title={`${fill} of ${squad.targetSize}`}>
           <span className="fill-bar">

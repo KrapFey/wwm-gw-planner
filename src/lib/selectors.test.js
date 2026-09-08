@@ -51,11 +51,15 @@ describe('squadLabel / squadOrdinal', () => {
     expect(squadOrdinal(strat, strat.squads[2])).toBe(1)
     expect(squadOrdinal(strat, strat.squads[3])).toBe(1)
   })
-  it('derives Att / Def names', () => {
+  it('derives Att / Def names when unnamed', () => {
     expect(squadLabel(strat, strat.squads[0])).toBe('Att 1')
     expect(squadLabel(strat, strat.squads[1])).toBe('Att 2')
     expect(squadLabel(strat, strat.squads[2])).toBe('Def 1')
     expect(squadLabel(strat, strat.squads[3])).toBe('Att 1')
+  })
+  it('a custom name overrides the derived default (blank falls back)', () => {
+    expect(squadLabel(strat, { ...strat.squads[0], name: 'Vanguard' })).toBe('Vanguard')
+    expect(squadLabel(strat, { ...strat.squads[0], name: '  ' })).toBe('Att 1')
   })
 })
 

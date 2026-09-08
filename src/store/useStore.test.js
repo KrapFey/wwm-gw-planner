@@ -131,7 +131,7 @@ describe('team + marker store logic', () => {
     S().addSquad('ally')
     S().addSquad('ally', 'defence')
     expect(S().strategy.squads.map((q) => q.category)).toEqual(['attack', 'defence'])
-    expect(S().strategy.squads[0]).not.toHaveProperty('name')
+    expect(S().strategy.squads[0].name).toBe('') // blank -> derived default
   })
 
   it('togglePillCollapsed flips a per-pill UI flag', () => {

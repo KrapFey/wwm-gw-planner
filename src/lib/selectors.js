@@ -3,8 +3,8 @@ import { ROLES, LANES, MAX_PLAYERS_PER_SIDE, CATEGORY_META } from './schema'
 
 const zeroRoleTally = () => Object.fromEntries(ROLES.map((r) => [r, 0]))
 
-// Teams are numbered 1..n within their (side, category). Names are derived, not
-// stored, so deleting a team renumbers the rest.
+// Teams are numbered 1..n within their (side, category); the default name
+// follows that ordinal, so deleting an unnamed team renumbers the rest.
 export function squadOrdinal(strategy, squad) {
   const peers = strategy.squads.filter(
     (q) => q.side === squad.side && q.category === squad.category
@@ -12,9 +12,15 @@ export function squadOrdinal(strategy, squad) {
   return peers.findIndex((q) => q.id === squad.id) + 1
 }
 
-export function squadLabel(strategy, squad) {
+export function squadDefaultName(strategy, squad) {
   const meta = CATEGORY_META[squad.category] ?? CATEGORY_META.attack
   return `${meta.prefix} ${squadOrdinal(strategy, squad)}`
+}
+
+// Custom name if the team has one, otherwise the default ordinal name.
+export function squadLabel(strategy, squad) {
+  const custom = typeof squad.name === 'string' ? squad.name.trim() : ''
+  return custom || squadDefaultName(strategy, squad)
 }
 
 export function squadPlayers(strategy, squadId) {

@@ -86,10 +86,11 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
     .filter(Boolean)
     .join('  ·  ')
 
-  const approxCharW = FONT * 0.58
+  // generous per-char estimate (name is bold, may be all-caps) + a little slack
+  const approxCharW = FONT * 0.66
   const w = Math.min(
-    250,
-    Math.max(76, Math.ceil(name.length * approxCharW) + BADGE_W + PAD_X * 2)
+    260,
+    Math.max(84, Math.ceil(name.length * approxCharW) + BADGE_W + PAD_X * 2 + 10)
   )
   const left = -w / 2
 

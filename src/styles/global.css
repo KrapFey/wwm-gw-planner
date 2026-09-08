@@ -595,14 +595,25 @@ select {
   cursor: grabbing;
 }
 
-.squad > header .name {
+.squad > header input.name {
   min-width: 0;
+  width: 100%;
   font-weight: 600;
   padding: 4px 6px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  background: transparent;
+  border-color: transparent;
+}
+.squad > header input.name:hover {
+  background: var(--surface-1);
+}
+.squad > header input.name:focus {
+  background: var(--surface-1);
+  border-color: var(--border-2);
+}
+.squad > header input.name::placeholder {
+  color: var(--text-dim);
+  font-weight: 600;
+  opacity: 1;
 }
 
 /* ---- team category groups ------------------------------------- */

@@ -267,6 +267,7 @@ const creator = (set, get) => ({
         id: newId('sq'),
         side,
         category: normalizeCategory(category),
+        name: patch.name ?? '',
         lane: patch.lane ?? 'Unassigned',
         targetSize: patch.targetSize ?? s.config.defaultSquadSize ?? DEFAULT_SQUAD_SIZE,
         color: patch.color ?? squadColorForIndex(count, side),
@@ -292,6 +293,7 @@ const creator = (set, get) => ({
       s.squads.splice(i + 1, 0, {
         ...src,
         id: nid,
+        name: src.name ? `${src.name} copy` : '',
         color: squadColorForIndex(count, src.side),
         token: null
       })
@@ -605,8 +607,9 @@ export const useStore = create(
       name: STORAGE_KEY,
       // v3: strategy library. v4: two roster panels. v5: dropped dead
       // player.name/weapons + squad.leaderId. v7: teams grouped into
-      // Attack/Defence — squad.name dropped, squad.category added.
-      version: 7,
+      // Attack/Defence + squad.category. v8: squad.name back as an optional
+      // rename (blank = the derived "Att N" default).
+      version: 8,
       storage: createJSONStorage(() => appStorage),
       partialize: (state) => ({
         docs: state.docs,
