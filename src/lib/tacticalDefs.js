@@ -49,6 +49,40 @@ export const withAlpha = (hex, a) => {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
 }
 
+// Bowed control point for a curved arrow (shared by the renderer and the
+// path-follow resolver). `points` = [x1, y1, x2, y2].
+export function curvedArrowControl([x1, y1, x2, y2]) {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const len = Math.hypot(dx, dy) || 1
+  const bow = len * 0.22
+  return [(x1 + x2) / 2 - (dy / len) * bow, (y1 + y2) / 2 + (dx / len) * bow]
+}
+
+// Flat [x,y,x,y,...] polyline approximating a drawing, for motion-along-path.
+export function drawingPolyline(d) {
+  if (!d || !Array.isArray(d.points)) return null
+  if (d.tool === 'pen') return d.points
+  const [x1, y1, x2, y2] = d.points
+  if (d.tool === 'carrow') {
+    const [cx, cy] = curvedArrowControl(d.points)
+    const out = []
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24
+      const mt = 1 - t
+      out.push(
+        mt * mt * x1 + 2 * mt * t * cx + t * t * x2,
+        mt * mt * y1 + 2 * mt * t * cy + t * t * y2
+      )
+    }
+    return out
+  }
+  return [x1, y1, x2, y2] // arrow / straight line
+}
+
+// Which drawings can be used as a movement path.
+export const PATH_TOOLS = ['pen', 'arrow', 'carrow', 'line']
+
 export const NOTE_COLORS = ['#fde68a', '#fca5a5', '#a7f3d0', '#bfdbfe', '#e9d5ff']
 
 export const fmtClock = (secs) => {

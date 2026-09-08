@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore.js'
-import { totalDuration, activePhaseIndex } from '../../lib/playback.js'
-import { MARKER_KINDS, DRAW_TOOL_LABEL } from '../../lib/tacticalDefs.js'
+import {
+  totalDuration,
+  activePhaseIndex,
+  EASING_KINDS,
+  EASING_LABEL
+} from '../../lib/playback.js'
+import { MARKER_KINDS, DRAW_TOOL_LABEL, PATH_TOOLS } from '../../lib/tacticalDefs.js'
+import { squadLabel } from '../../lib/selectors.js'
 import { IconPlay, IconPause, IconSkipBack, IconSkipFwd, IconX } from '../Icons.jsx'
 
 const secs = (ms) => (ms / 1000).toFixed(1)
 
 export default function PhasesBar() {
+  const strategy = useStore((s) => s.strategy)
   const phases = useStore((s) => s.strategy.phases)
   const drawings = useStore((s) => s.strategy.drawings)
   const notes = useStore((s) => s.strategy.notes)
@@ -20,18 +27,26 @@ export default function PhasesBar() {
   const renamePhase = useStore((s) => s.renamePhase)
   const movePhase = useStore((s) => s.movePhase)
   const setPhaseTiming = useStore((s) => s.setPhaseTiming)
+  const setPhasePath = useStore((s) => s.setPhasePath)
   const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
 
   const [visOpen, setVisOpen] = useState(false)
+  const [pathsOpen, setPathsOpen] = useState(false)
   const visRef = useRef(null)
+  const pathsRef = useRef(null)
   useEffect(() => {
-    if (!visOpen) return
+    if (!visOpen && !pathsOpen) return
     const onDoc = (e) => {
-      if (!visRef.current?.contains(e.target)) setVisOpen(false)
+      if (visOpen && !visRef.current?.contains(e.target)) setVisOpen(false)
+      if (pathsOpen && !pathsRef.current?.contains(e.target)) setPathsOpen(false)
     }
     window.addEventListener('mousedown', onDoc)
     return () => window.removeEventListener('mousedown', onDoc)
-  }, [visOpen])
+  }, [visOpen, pathsOpen])
+
+  const pathChoices = drawings
+    .map((d, i) => ({ d, n: i + 1 }))
+    .filter(({ d }) => PATH_TOOLS.includes(d.tool))
 
   const total = totalDuration(phases)
   const hasPhases = phases.length > 0
@@ -198,6 +213,54 @@ export default function PhasesBar() {
             />
             s
           </label>
+          <label>
+            ease
+            <select
+              value={selPhase.easing || 'inout'}
+              onChange={(e) => setPhaseTiming(selPhase.id, { easing: e.target.value })}
+            >
+              {EASING_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {EASING_LABEL[k]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {pathChoices.length > 0 && placedSquads.length > 0 && (
+            <div className="pb-vis" ref={pathsRef}>
+              <button className="tiny ghost" onClick={() => setPathsOpen((v) => !v)}>
+                Paths ▾
+              </button>
+              {pathsOpen && (
+                <div className="pb-vis-pop">
+                  <div className="muted" style={{ fontSize: 10, padding: '2px 4px' }}>
+                    a team walks its drawn path this phase
+                  </div>
+                  {placedSquads.map((q) => (
+                    <label key={q.id}>
+                      <span className="mk-dot" style={{ background: q.color }} />
+                      {squadLabel(strategy, q)}
+                      <select
+                        style={{ marginLeft: 'auto' }}
+                        value={selPhase.paths?.[q.id] || ''}
+                        onChange={(e) =>
+                          setPhasePath(selPhase.id, q.id, e.target.value || null)
+                        }
+                      >
+                        <option value="">— straight</option>
+                        {pathChoices.map(({ d, n }) => (
+                          <option key={d.id} value={d.id}>
+                            {DRAW_TOOL_LABEL[d.tool] ?? 'Line'} {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {hasVisTargets && (
             <div className="pb-vis" ref={visRef}>
@@ -219,7 +282,7 @@ export default function PhasesBar() {
                           onChange={() => togglePhaseHidden(selPhase.id, 'squads', q.id)}
                         />
                         <span className="mk-dot" style={{ background: q.color }} />
-                        {q.name}
+                        {squadLabel(strategy, q)}
                       </label>
                     )
                   })}

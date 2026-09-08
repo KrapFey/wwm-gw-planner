@@ -383,8 +383,17 @@ const creator = (set, get) => ({
   removeDrawing: (id) =>
     commit(set, get, (s) => {
       s.drawings = s.drawings.filter((d) => d.id !== id)
+      for (const p of s.phases) {
+        for (const sid of Object.keys(p.paths || {})) {
+          if (p.paths[sid] === id) delete p.paths[sid]
+        }
+      }
     }),
-  clearDrawings: () => commit(set, get, (s) => { s.drawings = [] }),
+  clearDrawings: () =>
+    commit(set, get, (s) => {
+      s.drawings = []
+      for (const p of s.phases) p.paths = {}
+    }),
 
   // ---- tactical: sticky notes ---------------------------------------
   addNote: (pos, patch = {}) =>
@@ -502,6 +511,17 @@ const creator = (set, get) => ({
       if (!p) return
       if ('duration' in patch) p.duration = Math.max(0, Number(patch.duration) || 0)
       if ('hold' in patch) p.hold = Math.max(0, Number(patch.hold) || 0)
+      if ('easing' in patch) p.easing = patch.easing
+    }),
+
+  // Assign a drawing for a squad to travel along during this phase (null clears).
+  setPhasePath: (phaseId, squadId, drawingId) =>
+    commit(set, get, (s) => {
+      const p = s.phases.find((x) => x.id === phaseId)
+      if (!p) return
+      if (!p.paths) p.paths = {}
+      if (drawingId) p.paths[squadId] = drawingId
+      else delete p.paths[squadId]
     }),
 
   movePhase: (id, dir) =>

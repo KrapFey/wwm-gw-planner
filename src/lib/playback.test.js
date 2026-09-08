@@ -4,7 +4,9 @@ import {
   totalDuration,
   phaseArrivalTime,
   activePhaseIndex,
-  startFrame
+  startFrame,
+  pointAtFraction,
+  easingFn
 } from './playback.js'
 
 const start = {
@@ -120,6 +122,45 @@ describe('frameAt', () => {
     const p = [{ id: 'x', duration: 1000, hold: 0, board: { squads: { c: { x: 50, y: 50 } }, markers: {} } }]
     const f = frameAt(start, p, 400)
     expect(f.squads.c).toEqual({ x: 50, y: 50 })
+  })
+
+  it('honours a per-phase easing', () => {
+    const p = [{ id: 'x', duration: 1000, hold: 0, easing: 'linear', board: { squads: { a: { x: 100, y: 0 } }, markers: {} } }]
+    // linear: quarter time -> quarter distance
+    expect(frameAt(start, p, 250).squads.a.x).toBeCloseTo(25)
+  })
+
+  it('a squad follows an assigned drawn path along its arc length', () => {
+    const p = [{ id: 'x', duration: 1000, hold: 0, board: { squads: {}, markers: {} } }]
+    // L-shaped path: (0,0) -> (0,100) -> (100,100), total length 200
+    const polys = { x: { a: [0, 0, 0, 100, 100, 100] } }
+    const half = frameAt(start, p, 500, polys) // eased(0.5)=0.5 -> 100 along -> corner
+    expect(half.squads.a).toEqual({ x: 0, y: 100 })
+    const end = frameAt(start, p, 1200, polys) // past end -> path end
+    expect(end.squads.a).toEqual({ x: 100, y: 100 })
+  })
+})
+
+describe('pointAtFraction', () => {
+  it('interpolates along a polyline by arc length', () => {
+    const line = [0, 0, 10, 0, 10, 10] // len 20
+    expect(pointAtFraction(line, 0)).toEqual({ x: 0, y: 0 })
+    expect(pointAtFraction(line, 0.25)).toEqual({ x: 5, y: 0 })
+    expect(pointAtFraction(line, 0.5)).toEqual({ x: 10, y: 0 })
+    expect(pointAtFraction(line, 1)).toEqual({ x: 10, y: 10 })
+    expect(pointAtFraction(line, 2)).toEqual({ x: 10, y: 10 }) // clamped
+  })
+  it('degenerate inputs', () => {
+    expect(pointAtFraction([5, 7], 0.5)).toEqual({ x: 5, y: 7 })
+    expect(pointAtFraction(null, 0.5)).toBeNull()
+  })
+})
+
+describe('easingFn', () => {
+  it('linear is identity, unknown falls back to ease-in-out', () => {
+    expect(easingFn('linear')(0.3)).toBe(0.3)
+    expect(easingFn('nope')(0.5)).toBeCloseTo(0.5)
+    expect(easingFn('in')(0.5)).toBeCloseTo(0.125)
   })
 })
 

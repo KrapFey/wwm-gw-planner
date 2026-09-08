@@ -209,6 +209,30 @@ describe('planning phases', () => {
     expect(S().playback.phaseId).toBeNull()
   })
 
+  it('setPhasePath assigns/clears a drawn path for a squad', () => {
+    seedTwoPills()
+    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 100, 0] })
+    const did = S().strategy.drawings[0].id
+    S().addPhase()
+    const [p] = S().strategy.phases
+    const q = S().strategy.squads[0].id
+    S().setPhasePath(p.id, q, did)
+    expect(S().strategy.phases[0].paths[q]).toBe(did)
+    S().setPhasePath(p.id, q, null)
+    expect(S().strategy.phases[0].paths[q]).toBeUndefined()
+  })
+
+  it('removing a drawing clears any phase paths that referenced it', () => {
+    seedTwoPills()
+    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 1, 1] })
+    const did = S().strategy.drawings[0].id
+    S().addPhase()
+    const q = S().strategy.squads[0].id
+    S().setPhasePath(S().strategy.phases[0].id, q, did)
+    S().removeDrawing(did)
+    expect(S().strategy.phases[0].paths[q]).toBeUndefined()
+  })
+
   it('removing a team also purges it from every phase board', () => {
     const [q1] = seedTwoPills()
     S().addPhase()

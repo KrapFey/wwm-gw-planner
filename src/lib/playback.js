@@ -10,6 +10,54 @@ export const lerp = (a, b, t) => a + (b - a) * t
 export const easeInOutCubic = (x) =>
   x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
 
+const EASING = {
+  linear: (x) => x,
+  in: (x) => x * x * x,
+  out: (x) => 1 - Math.pow(1 - x, 3),
+  inout: easeInOutCubic
+}
+export const EASING_KINDS = ['inout', 'linear', 'in', 'out']
+export const EASING_LABEL = { inout: 'Ease', linear: 'Linear', in: 'Ease in', out: 'Ease out' }
+export const easingFn = (kind) => EASING[kind] || EASING.inout
+
+// Point at fraction `f` (0..1) of a flat [x,y,x,y,...] polyline's arc length.
+export function pointAtFraction(points, f) {
+  if (!points || points.length < 2) return null
+  if (points.length < 4) return { x: points[0], y: points[1] }
+  const pts = []
+  for (let i = 0; i + 1 < points.length; i += 2) pts.push([points[i], points[i + 1]])
+  const seg = []
+  let total = 0
+  for (let i = 1; i < pts.length; i++) {
+    const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
+    seg.push(d)
+    total += d
+  }
+  if (total === 0) return { x: pts[0][0], y: pts[0][1] }
+  const target = Math.min(1, Math.max(0, f)) * total
+  let acc = 0
+  for (let i = 0; i < seg.length; i++) {
+    if (acc + seg[i] >= target) {
+      const u = seg[i] === 0 ? 0 : (target - acc) / seg[i]
+      return { x: lerp(pts[i][0], pts[i + 1][0], u), y: lerp(pts[i][1], pts[i + 1][1], u) }
+    }
+    acc += seg[i]
+  }
+  const last = pts[pts.length - 1]
+  return { x: last[0], y: last[1] }
+}
+
+// Override squad positions that follow a drawn path for this phase.
+function applyPaths(squads, phasePaths, e) {
+  if (!phasePaths) return squads
+  const out = { ...squads }
+  for (const sid of Object.keys(phasePaths)) {
+    const p = pointAtFraction(phasePaths[sid], e)
+    if (p) out[sid] = p
+  }
+  return out
+}
+
 // Live board -> the Start frame in the same shape as a phase board.
 export function startFrame(placedSquads, markers) {
   return {
@@ -76,16 +124,18 @@ const EMPTY_HIDDEN = {
 }
 
 // Interpolated board at time `t` (ms). `start` is the Start frame.
-// Returns { squads, markers, phaseIndex, hiddenDrawings, hiddenNotes,
-//           hiddenMarkers, hiddenSquads }.
-// Visibility follows the phase being animated toward / rested on; at t<=0
-// (Start) everything is visible.
-export function frameAt(start, phases, t) {
-  if (!phases.length) return { ...start, phaseIndex: -1, ...EMPTY_HIDDEN }
+// `pathPolys` (optional) = { [phaseId]: { [squadId]: number[] } } — a resolved
+// polyline a squad walks during that phase instead of a straight lerp.
+// Returns { squads, markers, fromSquads, phaseIndex, hiddenDrawings, hiddenNotes,
+//           hiddenMarkers, hiddenSquads }. `fromSquads` = the source positions of
+// the phase currently animating (for motion trails).
+export function frameAt(start, phases, t, pathPolys) {
+  if (!phases.length) return { ...start, fromSquads: {}, phaseIndex: -1, ...EMPTY_HIDDEN }
   if (t <= 0) {
     return {
       squads: { ...start.squads },
       markers: { ...start.markers },
+      fromSquads: { ...start.squads },
       phaseIndex: 0,
       ...EMPTY_HIDDEN
     }
@@ -97,12 +147,15 @@ export function frameAt(start, phases, t) {
     const dur = Math.max(0, phases[i].duration || 0)
     const hold = Math.max(0, phases[i].hold || 0)
     const to = phases[i].board || { squads: {}, markers: {} }
+    const phasePaths = pathPolys?.[phases[i].id] || null
 
     if (t < clock + dur || (dur === 0 && t <= clock)) {
-      const e = dur > 0 ? easeInOutCubic(Math.min(1, Math.max(0, (t - clock) / dur))) : 1
+      const raw = dur > 0 ? Math.min(1, Math.max(0, (t - clock) / dur)) : 1
+      const e = easingFn(phases[i].easing)(raw)
       return {
-        squads: blend(from.squads, to.squads, e),
+        squads: applyPaths(blend(from.squads, to.squads, e), phasePaths, e),
         markers: blend(from.markers, to.markers, e),
+        fromSquads: { ...from.squads },
         phaseIndex: i,
         ...hiddenOf(to)
       }
@@ -113,20 +166,28 @@ export function frameAt(start, phases, t) {
     // phase's visibility while positions haven't moved yet).
     if (t <= clock + hold) {
       return {
-        squads: { ...to.squads },
+        squads: applyPaths({ ...to.squads }, phasePaths, 1),
         markers: { ...to.markers },
+        fromSquads: { ...from.squads },
         phaseIndex: i,
         ...hiddenOf(to)
       }
     }
     clock += hold
-    from = to
+    // a path-following squad ends the phase at the path's end, so the next
+    // phase starts from there
+    from = phasePaths
+      ? { ...to, squads: applyPaths({ ...to.squads }, phasePaths, 1) }
+      : to
   }
   // past the end -> rest on the last phase
-  const last = phases[phases.length - 1].board || { squads: {}, markers: {} }
+  const lastPhase = phases[phases.length - 1]
+  const last = lastPhase.board || { squads: {}, markers: {} }
+  const lastPaths = pathPolys?.[lastPhase.id] || null
   return {
-    squads: { ...last.squads },
+    squads: applyPaths({ ...last.squads }, lastPaths, 1),
     markers: { ...last.markers },
+    fromSquads: { ...from.squads },
     phaseIndex: phases.length - 1,
     ...hiddenOf(last)
   }

@@ -111,12 +111,14 @@ const pointDict = (d) => {
   }
   return out
 }
+const EASINGS = ['inout', 'linear', 'in', 'out']
 export function normalizePhase(p, i) {
   return {
     id: p?.id || `ph_${i}`,
     name: typeof p?.name === 'string' && p.name ? p.name : `Phase ${i + 1}`,
     duration: Math.max(0, num(p?.duration, 2000)),
     hold: Math.max(0, num(p?.hold, 0)),
+    easing: EASINGS.includes(p?.easing) ? p.easing : 'inout',
     board: {
       squads: pointDict(p?.board?.squads),
       markers: pointDict(p?.board?.markers),

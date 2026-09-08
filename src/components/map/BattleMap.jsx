@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Stage, Layer } from 'react-konva'
+import { Stage, Layer, Line as KLine } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { MAP_W, MAP_H, clampToMap } from '../../lib/mapLayout.js'
 import {
@@ -10,7 +10,8 @@ import {
   DRAW_WIDTHS,
   SHAPE_TOOLS,
   SHAPE_META,
-  BOX_DRAW_TOOLS
+  BOX_DRAW_TOOLS,
+  drawingPolyline
 } from '../../lib/tacticalDefs.js'
 import MapImage from './MapImage.jsx'
 import FixtureSprite from './FixtureSprite.jsx'
@@ -67,7 +68,8 @@ const SHORTCUTS = [
   ['L', 'Line'],
   ['E', 'Eraser'],
   ['Del', 'Delete selection'],
-  ['Esc', 'Back to select']
+  ['Esc', 'Back to select'],
+  ['Ctrl 0', 'Reset zoom']
 ]
 
 export default function BattleMap() {
@@ -128,6 +130,7 @@ export default function BattleMap() {
   const pb = useStore((s) => s.playback)
   const setView = useStore((s) => s.setView)
   const setPlayback = useStore((s) => s.setPlayback)
+  const selectPhase = useStore((s) => s.selectPhase)
   const updatePhaseSquad = useStore((s) => s.updatePhaseSquad)
   const updatePhaseMarker = useStore((s) => s.updatePhaseMarker)
   const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
@@ -149,12 +152,30 @@ export default function BattleMap() {
   const boardCount = placedSquads.length
   const interactive = tool === 'select' && !editLayout && !pb.playing
 
+  // Resolve each phase's assigned drawn paths into polylines the pills follow.
+  const pathPolys = useMemo(() => {
+    if (!pb.open || !phases.length) return null
+    const byId = Object.fromEntries(drawings.map((d) => [d.id, d]))
+    const res = {}
+    for (const p of phases) {
+      const m = {}
+      for (const [sid, did] of Object.entries(p.paths || {})) {
+        const poly = drawingPolyline(byId[did])
+        if (poly) m[sid] = poly
+      }
+      if (Object.keys(m).length) res[p.id] = m
+    }
+    return Object.keys(res).length ? res : null
+  }, [pb.open, phases, drawings])
+
   // Phase-animation frame: the interpolated board while the phase editor is
   // open (null otherwise). Also gates which board a drag writes to.
   const frame =
     pb.open && phases.length
-      ? frameAt(startFrame(placedSquads, markers), phases, pb.t)
+      ? frameAt(startFrame(placedSquads, markers), phases, pb.t, pathPolys)
       : null
+  // faint motion trail: source position of whatever is animating right now
+  const trailFrom = frame && (pb.playing || pb.t > 0) ? frame.fromSquads : null
   const editingPhase = pb.open && pb.phaseId ? pb.phaseId : null
 
   const onSquadMoved = (id, pos) =>
@@ -196,8 +217,44 @@ export default function BattleMap() {
     const onKey = (e) => {
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault()
+        zoomTo(1)
+        return
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return
       const k = e.key.toLowerCase()
+
+      // phase-editor transport
+      const pbNow = useStore.getState().playback
+      if (pbNow.open) {
+        const phs = useStore.getState().strategy.phases
+        const idx = phs.findIndex((p) => p.id === pbNow.phaseId)
+        if (k === ' ' || k === 'spacebar') {
+          e.preventDefault()
+          setPlayback(
+            pbNow.playing
+              ? { playing: false }
+              : { playing: true, t: pbNow.t >= totalDuration(phs) ? 0 : pbNow.t }
+          )
+          return
+        }
+        if (k === 'arrowright') {
+          e.preventDefault()
+          selectPhase(phs[idx < 0 ? 0 : Math.min(phs.length - 1, idx + 1)]?.id ?? null)
+          return
+        }
+        if (k === 'arrowleft') {
+          e.preventDefault()
+          selectPhase(idx <= 0 ? null : phs[idx - 1].id)
+          return
+        }
+        if (k === 'home') {
+          e.preventDefault()
+          selectPhase(null)
+          return
+        }
+      }
       if (k === 'escape') {
         setTool('select')
         setSelMarker(null)
@@ -752,6 +809,28 @@ export default function BattleMap() {
               )}
               {draft && <DrawingShape drawing={{ ...draft, id: 'draft' }} live />}
             </Layer>
+
+            {trailFrom && (
+              <Layer listening={false}>
+                {placedSquads.map((q) => {
+                  const a = trailFrom[q.id]
+                  const b = frame.squads[q.id]
+                  if (!a || !b || frame.hiddenSquads?.has(q.id)) return null
+                  if (Math.hypot(b.x - a.x, b.y - a.y) < 4) return null
+                  return (
+                    <KLine
+                      key={q.id}
+                      points={[a.x, a.y, b.x, b.y]}
+                      stroke={q.color}
+                      strokeWidth={3}
+                      opacity={0.3}
+                      lineCap="round"
+                      dash={[2, 6]}
+                    />
+                  )
+                })}
+              </Layer>
+            )}
 
             <Layer
               listening={interactive}

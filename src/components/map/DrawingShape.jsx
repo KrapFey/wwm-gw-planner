@@ -1,6 +1,6 @@
 import { Group, Line, Arrow, Rect, Ellipse } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
-import { SHAPE_TOOLS, withAlpha } from '../../lib/tacticalDefs.js'
+import { SHAPE_TOOLS, withAlpha, curvedArrowControl } from '../../lib/tacticalDefs.js'
 
 // One committed drawing: freehand line, arrow, or a basic shape (rounded
 // rectangle / ellipse / triangle / straight line). Shapes store a 2-point
@@ -70,14 +70,8 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
       return <Arrow {...common} fill={drawing.color} pointerLength={head} pointerWidth={head} />
     }
     if (drawing.tool === 'carrow') {
-      // bow a control point out perpendicular to the chord for a curved arrow
       const [x1, y1, x2, y2] = drawing.points
-      const dx = x2 - x1
-      const dy = y2 - y1
-      const len = Math.hypot(dx, dy) || 1
-      const bow = len * 0.22
-      const cx = (x1 + x2) / 2 - (dy / len) * bow
-      const cy = (y1 + y2) / 2 + (dx / len) * bow
+      const [cx, cy] = curvedArrowControl(drawing.points)
       return (
         <Arrow
           {...common}
