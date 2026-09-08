@@ -227,36 +227,51 @@ export default function PhasesBar() {
             </select>
           </label>
 
-          {pathChoices.length > 0 && placedSquads.length > 0 && (
+          {placedSquads.length > 0 && (
             <div className="pb-vis" ref={pathsRef}>
-              <button className="tiny ghost" onClick={() => setPathsOpen((v) => !v)}>
+              <button
+                className={
+                  'tiny' +
+                  (Object.keys(selPhase.paths || {}).length ? ' primary' : ' ghost')
+                }
+                onClick={() => setPathsOpen((v) => !v)}
+              >
                 Paths ▾
               </button>
               {pathsOpen && (
                 <div className="pb-vis-pop">
-                  <div className="muted" style={{ fontSize: 10, padding: '2px 4px' }}>
-                    a team walks its drawn path this phase
-                  </div>
-                  {placedSquads.map((q) => (
-                    <label key={q.id}>
-                      <span className="mk-dot" style={{ background: q.color }} />
-                      {squadLabel(strategy, q)}
-                      <select
-                        style={{ marginLeft: 'auto' }}
-                        value={selPhase.paths?.[q.id] || ''}
-                        onChange={(e) =>
-                          setPhasePath(selPhase.id, q.id, e.target.value || null)
-                        }
-                      >
-                        <option value="">— straight</option>
-                        {pathChoices.map(({ d, n }) => (
-                          <option key={d.id} value={d.id}>
-                            {DRAW_TOOL_LABEL[d.tool] ?? 'Line'} {n}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ))}
+                  {pathChoices.length === 0 ? (
+                    <div className="muted" style={{ fontSize: 11, padding: '4px 6px', maxWidth: 200 }}>
+                      Draw a line or arrow on the map, then pick it here to send a
+                      team along it this phase.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="muted" style={{ fontSize: 10, padding: '2px 4px' }}>
+                        a team walks its drawn path this phase
+                      </div>
+                      {placedSquads.map((q) => (
+                        <label key={q.id}>
+                          <span className="mk-dot" style={{ background: q.color }} />
+                          {squadLabel(strategy, q)}
+                          <select
+                            style={{ marginLeft: 'auto' }}
+                            value={selPhase.paths?.[q.id] || ''}
+                            onChange={(e) =>
+                              setPhasePath(selPhase.id, q.id, e.target.value || null)
+                            }
+                          >
+                            <option value="">— straight</option>
+                            {pathChoices.map(({ d, n }) => (
+                              <option key={d.id} value={d.id}>
+                                {DRAW_TOOL_LABEL[d.tool] ?? 'Line'} {n}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>

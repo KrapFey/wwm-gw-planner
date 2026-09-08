@@ -822,10 +822,13 @@ export default function BattleMap() {
                       key={q.id}
                       points={[a.x, a.y, b.x, b.y]}
                       stroke={q.color}
-                      strokeWidth={3}
-                      opacity={0.3}
+                      strokeWidth={5}
+                      opacity={0.75}
                       lineCap="round"
-                      dash={[2, 6]}
+                      dash={[10, 8]}
+                      shadowColor={q.color}
+                      shadowBlur={8}
+                      shadowOpacity={0.6}
                     />
                   )
                 })}
