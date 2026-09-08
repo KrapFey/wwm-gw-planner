@@ -13,8 +13,8 @@ const DISC_R = 15
 
 // A whole team placed on the map as one draggable pill. The body/border colour
 // is shared by side + category — every Attack pill on a guild looks alike, every
-// Defence pill alike (4 in total: our Attack blue / Defence teal, enemy Attack
-// red / Defence orange). The count badge keeps the team's own accent so
+// Defense pill alike (4 in total: our Attack blue / Defense teal, enemy Attack
+// red / Defense orange). The count badge keeps the team's own accent so
 // individual teams stay tellable. Middle-click collapses it to a bare disc:
 // category colour ring, team colour fill.
 export default function SquadToken({ squad, override, onMove, onRemove, locked = false }) {

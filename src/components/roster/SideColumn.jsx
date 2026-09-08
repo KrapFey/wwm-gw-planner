@@ -1,5 +1,5 @@
 import { useStore } from '../../store/useStore.js'
-import { ROLES, LANES, CATEGORIES, CATEGORY_META } from '../../lib/schema.js'
+import { ROLES, LANES, CATEGORIES, CATEGORY_META, pillColor } from '../../lib/schema.js'
 import { sideSummary, ROLE_ICON } from '../../lib/selectors.js'
 import SquadCard from './SquadCard.jsx'
 
@@ -41,7 +41,11 @@ export default function SideColumn({ sideId, meta }) {
         {CATEGORIES.map((cat) => {
           const teams = squads.filter((q) => q.category === cat)
           return (
-            <div className="team-cat" key={cat}>
+            <div
+              className="team-cat"
+              key={cat}
+              style={{ '--cat-tint': pillColor(sideId, cat) }}
+            >
               <div className="team-cat-head">
                 <span>{CATEGORY_META[cat].label}</span>
                 <span className="muted">{teams.length}</span>

@@ -9,12 +9,13 @@ export const ROLES = ['Tank', 'DPS', 'Healer']
 
 export const LANES = ['Top', 'Mid', 'Bottom']
 
-// Teams are organised under a guild into Attack / Defence. The category is
+// Teams are organised under a guild into Attack / Defense. The category is
 // fixed when the team is created and drives its auto name (Att 1, Def 1, …).
+// (The stored key stays "defence"; only the label is US-spelled.)
 export const CATEGORIES = ['attack', 'defence']
 export const CATEGORY_META = {
   attack: { label: 'Attack', prefix: 'Att' },
-  defence: { label: 'Defence', prefix: 'Def' }
+  defence: { label: 'Defense', prefix: 'Def' }
 }
 export const normalizeCategory = (c, hintName = '') =>
   c === 'defence' || c === 'attack'
@@ -48,10 +49,10 @@ export const squadColorForIndex = (i, side = 'ally') => {
 }
 
 // Shared map-pill colour: every Attack pill on a guild looks the same, every
-// Defence pill looks the same — 4 in total. Both of a guild's colours keep its
-// temperature (ours = cool, enemy = warm) but Attack vs Defence are clearly
-// different hues: our Attack = blue / Defence = teal, enemy Attack = red /
-// Defence = orange.
+// Defense pill looks the same — 4 in total. Both of a guild's colours keep its
+// temperature (ours = cool, enemy = warm) but Attack vs Defense are clearly
+// different hues: our Attack = blue / Defense = teal, enemy Attack = red /
+// Defense = orange.
 const PILL_COLORS = {
   ally: { attack: '#3b82f6', defence: '#2dd4bf' },
   enemy: { attack: '#ef4444', defence: '#f97316' }
