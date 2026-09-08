@@ -39,7 +39,8 @@ import {
   IconCircle,
   IconTriangle,
   IconLine,
-  IconHelp
+  IconHelp,
+  IconTrash
 } from '../Icons.jsx'
 
 const MIN_ZOOM = 0.1
@@ -84,6 +85,7 @@ export default function BattleMap() {
   const [markerPalette, setMarkerPalette] = useState(false)
   const [shapePalette, setShapePalette] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [clearMenu, setClearMenu] = useState(false)
   const [selMarker, setSelMarker] = useState(null)
   const [selDrawing, setSelDrawing] = useState(null)
 
@@ -193,6 +195,8 @@ export default function BattleMap() {
         setSelDrawing(null)
         setMarkerPalette(false)
         setShapePalette(false)
+        setShortcutsOpen(false)
+        setClearMenu(false)
         return
       }
       if (k === 'delete' || k === 'backspace') {
@@ -404,6 +408,269 @@ export default function BattleMap() {
 
   return (
     <div className="map">
+      {/* ---- canvas toolbar ---- */}
+      <div className="canvas-toolbar">
+        {!editLayout && (
+          <>
+            <div className="ctb-group">
+              <button
+                className={'dock-btn' + (tool === 'select' ? ' on' : '')}
+                onClick={() => setTool('select')}
+                title="Select / pan (V)"
+              >
+                <IconCursor />
+              </button>
+              <button
+                className={'dock-btn' + (tool === 'pen' ? ' on' : '')}
+                onClick={() => setTool('pen')}
+                title="Freehand draw (D)"
+              >
+                <IconPencil />
+              </button>
+              <button
+                className={'dock-btn' + (tool === 'arrow' ? ' on' : '')}
+                onClick={() => setTool('arrow')}
+                title="Arrow (A)"
+              >
+                <IconArrow />
+              </button>
+              <div className="ctb-menu">
+                <button
+                  className={'dock-btn' + (isShapeTool || shapePalette ? ' on' : '')}
+                  onClick={() => {
+                    setShapePalette((v) => !v)
+                    setMarkerPalette(false)
+                  }}
+                  title="Shapes — rectangle (R), ellipse (C), triangle (T), line (L)"
+                >
+                  <IconShapes />
+                </button>
+                {shapePalette && (
+                  <div className="ctb-drop">
+                    {SHAPE_TOOLS.map((s) => {
+                      const Icon = SHAPE_ICON[s]
+                      return (
+                        <button
+                          key={s}
+                          className={'ctb-drop-item' + (tool === s ? ' on' : '')}
+                          onClick={() => {
+                            setTool(s)
+                            setShapePalette(false)
+                          }}
+                        >
+                          <Icon />
+                          {SHAPE_META[s].label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+              <button
+                className={'dock-btn' + (tool === 'erase' ? ' on' : '')}
+                onClick={() => setTool('erase')}
+                title="Eraser — click or drag over lines to delete (E)"
+              >
+                <IconEraser />
+              </button>
+            </div>
+
+            <span className="ctb-div" />
+
+            <div className="ctb-group">
+              <div className="ctb-menu">
+                <button
+                  className={'dock-btn' + (markerPalette ? ' on' : '')}
+                  onClick={() => {
+                    setMarkerPalette((v) => !v)
+                    setShapePalette(false)
+                  }}
+                  title="Objective markers"
+                >
+                  <IconFlag />
+                </button>
+                {markerPalette && (
+                  <div className="ctb-drop">
+                    {MARKER_KIND_LIST.map((k) => (
+                      <button
+                        key={k}
+                        className="ctb-drop-item"
+                        onClick={() => {
+                          addMarker(k, centerLogical())
+                          setMarkerPalette(false)
+                        }}
+                      >
+                        <span
+                          className="mk-dot"
+                          style={{ background: MARKER_KINDS[k].color }}
+                        />
+                        {MARKER_KINDS[k].label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                className="dock-btn"
+                onClick={() => addNote(centerLogical())}
+                title="Add note"
+              >
+                <IconNote />
+              </button>
+              <button
+                className="dock-btn"
+                onClick={() => addTimer(centerLogical())}
+                title="Add timer"
+              >
+                <IconClock />
+              </button>
+            </div>
+
+            <span className="ctb-div" />
+
+            <div className="ctb-group">
+              <button
+                className={'dock-btn' + (pb.open ? ' on' : '')}
+                onClick={togglePhases}
+                title="Plan phases (animation)"
+              >
+                <IconTimeline />
+              </button>
+              <button
+                className="dock-btn"
+                onClick={toggleEditLayout}
+                title="Edit map layout"
+              >
+                <IconLayers />
+              </button>
+            </div>
+
+            {(tool === 'pen' || tool === 'arrow' || isShapeTool) && (
+              <>
+                <span className="ctb-div" />
+                <div className="ctb-group ctb-draw">
+                  {DRAW_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      className={'swatch' + (drawColor === c ? ' on' : '')}
+                      style={{ background: c }}
+                      onClick={() => setDrawColor(c)}
+                      title="Colour"
+                    />
+                  ))}
+                  <span className="ctb-div" />
+                  {DRAW_WIDTHS.map((w) => (
+                    <button
+                      key={w.value}
+                      className={'tiny' + (drawWidth === w.value ? ' primary' : ' ghost')}
+                      onClick={() => setDrawWidth(w.value)}
+                    >
+                      {w.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        <span className="ctb-spacer" />
+
+        {!editLayout &&
+          (boardCount > 0 || markers.length > 0 || drawings.length > 0) && (
+            <>
+              <div className="ctb-menu">
+                <button
+                  className={'dock-btn' + (clearMenu ? ' on' : '')}
+                  onClick={() => setClearMenu((v) => !v)}
+                  title="Clear items"
+                >
+                  <IconTrash />
+                </button>
+                {clearMenu && (
+                  <div className="ctb-drop ctb-drop--right">
+                    {boardCount > 0 && (
+                      <button
+                        className="ctb-drop-item"
+                        onClick={() => {
+                          if (confirm('Remove all team markers from the map?')) clearTokens()
+                          setClearMenu(false)
+                        }}
+                      >
+                        Clear teams
+                      </button>
+                    )}
+                    {markers.length > 0 && (
+                      <button
+                        className="ctb-drop-item"
+                        onClick={() => {
+                          clearMarkers()
+                          setClearMenu(false)
+                        }}
+                      >
+                        Clear markers
+                      </button>
+                    )}
+                    {drawings.length > 0 && (
+                      <button
+                        className="ctb-drop-item"
+                        onClick={() => {
+                          clearDrawings()
+                          setClearMenu(false)
+                        }}
+                      >
+                        Clear drawings
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <span className="ctb-div" />
+            </>
+          )}
+
+        <div className="ctb-group">
+          <button className="dock-btn" onClick={() => zoomBy(1 / 1.2)} title="Zoom out">
+            <IconMinus />
+          </button>
+          <button className="zoom-val" onClick={() => zoomTo(1)} title="Reset zoom">
+            {Math.round(view.zoom * 100)}%
+          </button>
+          <button className="dock-btn" onClick={() => zoomBy(1.2)} title="Zoom in">
+            <IconPlus />
+          </button>
+          <button className="dock-btn" onClick={() => fit()} title="Fit to screen">
+            <IconFit />
+          </button>
+        </div>
+
+        {!editLayout && (
+          <>
+            <span className="ctb-div" />
+            <div className="ctb-menu">
+              <button
+                className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
+                onClick={() => setShortcutsOpen((v) => !v)}
+                title="Keyboard shortcuts"
+              >
+                <IconHelp />
+              </button>
+              {shortcutsOpen && (
+                <div className="ctb-drop ctb-drop--right shortcuts-pop">
+                  <div className="shortcuts-title">Keyboard shortcuts</div>
+                  {SHORTCUTS.map(([key, label]) => (
+                    <div className="shortcuts-row" key={key}>
+                      <kbd>{key}</kbd>
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
       <div
         className={
           'stage-wrap' +
@@ -524,211 +791,6 @@ export default function BattleMap() {
             onClose={() => setSelMarker(null)}
           />
         )}
-
-        {/* ---- floating tool dock (left) ---- */}
-        {!editLayout && (
-          <div className="canvas-dock">
-            <button
-              className={'dock-btn' + (tool === 'select' ? ' on' : '')}
-              onClick={() => setTool('select')}
-              title="Select / pan (V)"
-            >
-              <IconCursor />
-            </button>
-            <button
-              className={'dock-btn' + (tool === 'pen' ? ' on' : '')}
-              onClick={() => setTool('pen')}
-              title="Freehand draw (D)"
-            >
-              <IconPencil />
-            </button>
-            <button
-              className={'dock-btn' + (tool === 'arrow' ? ' on' : '')}
-              onClick={() => setTool('arrow')}
-              title="Arrow (A)"
-            >
-              <IconArrow />
-            </button>
-            <button
-              className={'dock-btn' + (isShapeTool || shapePalette ? ' on' : '')}
-              onClick={() => {
-                setShapePalette((v) => !v)
-                setMarkerPalette(false)
-              }}
-              title="Shapes — rectangle (R), ellipse (C), triangle (T), line (L)"
-            >
-              <IconShapes />
-            </button>
-            <button
-              className={'dock-btn' + (tool === 'erase' ? ' on' : '')}
-              onClick={() => setTool('erase')}
-              title="Eraser — click or drag over lines to delete (E)"
-            >
-              <IconEraser />
-            </button>
-            <span className="dock-div" />
-            <button
-              className={'dock-btn' + (markerPalette ? ' on' : '')}
-              onClick={() => setMarkerPalette((v) => !v)}
-              title="Objective markers"
-            >
-              <IconFlag />
-            </button>
-            <button
-              className="dock-btn"
-              onClick={() => addNote(centerLogical())}
-              title="Add note"
-            >
-              <IconNote />
-            </button>
-            <button
-              className="dock-btn"
-              onClick={() => addTimer(centerLogical())}
-              title="Add timer"
-            >
-              <IconClock />
-            </button>
-            <span className="dock-div" />
-            <button
-              className={'dock-btn' + (pb.open ? ' on' : '')}
-              onClick={togglePhases}
-              title="Plan phases (animation)"
-            >
-              <IconTimeline />
-            </button>
-            <button className="dock-btn" onClick={toggleEditLayout} title="Edit map layout">
-              <IconLayers />
-            </button>
-            <span className="dock-div" />
-            <div className="dock-help">
-              <button
-                className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
-                onClick={() => setShortcutsOpen((v) => !v)}
-                title="Keyboard shortcuts"
-              >
-                <IconHelp />
-              </button>
-              {shortcutsOpen && (
-                <div className="shortcuts-pop">
-                  <div className="shortcuts-title">Keyboard shortcuts</div>
-                  {SHORTCUTS.map(([key, label]) => (
-                    <div className="shortcuts-row" key={key}>
-                      <kbd>{key}</kbd>
-                      <span>{label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* shape picker */}
-        {!editLayout && shapePalette && (
-          <div className="marker-palette shape-palette">
-            {SHAPE_TOOLS.map((s) => {
-              const Icon = SHAPE_ICON[s]
-              return (
-                <button
-                  key={s}
-                  className={'tiny marker-btn' + (tool === s ? ' on' : '')}
-                  onClick={() => {
-                    setTool(s)
-                    setShapePalette(false)
-                  }}
-                >
-                  <Icon />
-                  {SHAPE_META[s].label}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* draw context (colour + width) */}
-        {!editLayout && !shapePalette && (tool === 'pen' || tool === 'arrow' || isShapeTool) && (
-          <div className="dock-ctx">
-            {DRAW_COLORS.map((c) => (
-              <button
-                key={c}
-                className={'swatch' + (drawColor === c ? ' on' : '')}
-                style={{ background: c }}
-                onClick={() => setDrawColor(c)}
-                title="Colour"
-              />
-            ))}
-            <span className="dock-div" />
-            {DRAW_WIDTHS.map((w) => (
-              <button
-                key={w.value}
-                className={'tiny' + (drawWidth === w.value ? ' primary' : ' ghost')}
-                onClick={() => setDrawWidth(w.value)}
-              >
-                {w.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* marker palette */}
-        {!editLayout && markerPalette && (
-          <div className="marker-palette">
-            {MARKER_KIND_LIST.map((k) => (
-              <button
-                key={k}
-                className="tiny marker-btn"
-                style={{ borderColor: MARKER_KINDS[k].color }}
-                onClick={() => addMarker(k, centerLogical())}
-              >
-                <span className="mk-dot" style={{ background: MARKER_KINDS[k].color }} />
-                {MARKER_KINDS[k].label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* top-right clear actions */}
-        {!editLayout && (boardCount > 0 || markers.length > 0 || drawings.length > 0) && (
-          <div className="canvas-actions">
-            {boardCount > 0 && (
-              <button
-                className="tiny ghost"
-                onClick={() =>
-                  confirm('Remove all team markers from the map?') && clearTokens()
-                }
-              >
-                Clear teams
-              </button>
-            )}
-            {markers.length > 0 && (
-              <button className="tiny ghost" onClick={clearMarkers}>
-                Clear markers
-              </button>
-            )}
-            {drawings.length > 0 && (
-              <button className="tiny ghost" onClick={clearDrawings}>
-                Clear drawings
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* zoom dock (bottom-right) */}
-        <div className="zoom-dock">
-          <button className="dock-btn" onClick={() => zoomBy(1 / 1.2)} title="Zoom out">
-            <IconMinus />
-          </button>
-          <button className="zoom-val" onClick={() => zoomTo(1)} title="Reset zoom">
-            {Math.round(view.zoom * 100)}%
-          </button>
-          <button className="dock-btn" onClick={() => zoomBy(1.2)} title="Zoom in">
-            <IconPlus />
-          </button>
-          <span className="dock-div" />
-          <button className="dock-btn" onClick={() => fit()} title="Fit to screen">
-            <IconFit />
-          </button>
-        </div>
 
         {editLayout && (
           <LayoutEditorPanel
