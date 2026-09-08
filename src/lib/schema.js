@@ -35,8 +35,8 @@ export const MAX_PLAYERS_PER_SIDE = 30
 export const DEFAULT_SQUAD_SIZE = 5
 export const SQUAD_SIZE_PRESETS = [5, 10]
 
-// Team accent palettes are side-specific so a team reads as "ours" (cool) vs
-// "enemy" (warm) even before you notice its border.
+// Per-team accent (roster cards) — side-specific so a team reads as "ours"
+// (cool) vs "enemy" (warm); each team in a side gets its own shade.
 const SQUAD_COLORS = {
   ally: ['#60a5fa', '#22d3ee', '#818cf8', '#38bdf8', '#2dd4bf', '#a78bfa', '#93c5fd'],
   enemy: ['#f87171', '#fb923c', '#f472b6', '#fbbf24', '#fca5a5', '#e879f9', '#f97316']
@@ -46,6 +46,18 @@ export const squadColorForIndex = (i, side = 'ally') => {
   const p = SQUAD_COLORS[side] ?? SQUAD_COLORS.ally
   return p[((i % p.length) + p.length) % p.length]
 }
+
+// Shared map-pill colour: every Attack pill on a guild looks the same, every
+// Defence pill looks the same — 4 in total. Both of a guild's colours keep its
+// temperature (ours = cool, enemy = warm) but Attack vs Defence are clearly
+// different hues: our Attack = blue / Defence = teal, enemy Attack = red /
+// Defence = orange.
+const PILL_COLORS = {
+  ally: { attack: '#3b82f6', defence: '#2dd4bf' },
+  enemy: { attack: '#ef4444', defence: '#f97316' }
+}
+export const pillColor = (side = 'ally', category = 'attack') =>
+  (PILL_COLORS[side] ?? PILL_COLORS.ally)[category === 'defence' ? 'defence' : 'attack']
 
 export function makeSquad({
   side,

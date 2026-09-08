@@ -288,7 +288,13 @@ const creator = (set, get) => ({
       if (i === -1) return
       const src = s.squads[i]
       const nid = newId('sq')
-      s.squads.splice(i + 1, 0, { ...src, id: nid, token: null })
+      const count = s.squads.filter((q) => q.side === src.side).length
+      s.squads.splice(i + 1, 0, {
+        ...src,
+        id: nid,
+        color: squadColorForIndex(count, src.side),
+        token: null
+      })
       for (const p of s.players.filter((p) => p.squadId === id)) {
         s.players.push({ id: newId('pl'), side: p.side, role: p.role, squadId: nid })
       }

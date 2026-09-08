@@ -96,6 +96,7 @@ describe('team + marker store logic', () => {
     expect(sq[1].id).not.toBe(qid) // dup inserted at index 1
     expect(sq[1].category).toBe('attack')
     expect(sq[1].token).toBeNull()
+    expect(sq[1].color).not.toBe(sq[0].color) // gets its own accent, not the source's
     expect(S().strategy.players.filter((p) => p.squadId === sq[1].id).map((p) => p.role))
       .toEqual(['Tank', 'Healer'])
   })

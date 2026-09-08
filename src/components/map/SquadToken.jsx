@@ -1,7 +1,7 @@
 import { Group, Rect, Text, Circle } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { squadStats, squadLabel } from '../../lib/selectors.js'
-import { ROLES, SIDE_META } from '../../lib/schema.js'
+import { ROLES, pillColor } from '../../lib/schema.js'
 import { clampToMap } from '../../lib/mapLayout.js'
 
 const H = 28
@@ -11,10 +11,12 @@ const BADGE_W = 24
 const LETTER = { Tank: 'T', DPS: 'D', Healer: 'H' }
 const DISC_R = 15
 
-// A whole team placed on the map as one draggable pill. The pill is
-// side-coded (blue border/glow = ours, red = enemy); the small dot + count
-// badge use the team's own accent so same-side teams stay distinguishable.
-// Middle-click collapses it to a bare colour disc showing the team's size.
+// A whole team placed on the map as one draggable pill. The body/border colour
+// is shared by side + category — every Attack pill on a guild looks alike, every
+// Defence pill alike (4 in total: our Attack blue / Defence teal, enemy Attack
+// red / Defence orange). The count badge keeps the team's own accent so
+// individual teams stay tellable. Middle-click collapses it to a bare disc:
+// category colour ring, team colour fill.
 export default function SquadToken({ squad, override, onMove, onRemove, locked = false }) {
   const setSquadToken = useStore((s) => s.setSquadToken)
   const strategy = useStore((s) => s.strategy)
@@ -27,7 +29,7 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
   const x = override?.x ?? squad.token.x
   const y = override?.y ?? squad.token.y
 
-  const sideColor = SIDE_META[squad.side]?.color ?? '#888'
+  const pillCol = pillColor(squad.side, squad.category)
   const name = squadLabel(strategy, squad)
 
   // middle-click toggles the collapsed (bare disc) view
@@ -56,11 +58,11 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
         <Circle
           radius={DISC_R}
           fill={squad.color}
-          stroke={sideColor}
-          strokeWidth={2.5}
-          shadowColor={sideColor}
+          stroke={pillCol}
+          strokeWidth={3}
+          shadowColor={pillCol}
           shadowBlur={9}
-          shadowOpacity={0.35}
+          shadowOpacity={0.4}
         />
         <Text
           x={-DISC_R}
@@ -87,7 +89,7 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
   const approxCharW = FONT * 0.58
   const w = Math.min(
     250,
-    Math.max(84, Math.ceil(name.length * approxCharW) + BADGE_W + PAD_X * 2 + 16)
+    Math.max(76, Math.ceil(name.length * approxCharW) + BADGE_W + PAD_X * 2)
   )
   const left = -w / 2
 
@@ -96,7 +98,7 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
 
   return (
     <Group {...dragProps}>
-      {/* base + side wash */}
+      {/* base + pill wash */}
       <Rect
         x={left}
         y={-H / 2}
@@ -104,9 +106,9 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
         height={H}
         cornerRadius={H / 2}
         fill="rgba(12,14,18,0.94)"
-        stroke={sideColor}
+        stroke={pillCol}
         strokeWidth={2.5}
-        shadowColor={sideColor}
+        shadowColor={pillCol}
         shadowBlur={10}
         shadowOpacity={0.32}
       />
@@ -116,36 +118,15 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
         width={w}
         height={H}
         cornerRadius={H / 2}
-        fill={sideColor}
-        opacity={0.12}
-        listening={false}
-      />
-      {/* side cap */}
-      <Rect
-        x={left}
-        y={-H / 2}
-        width={13}
-        height={H}
-        cornerRadius={[H / 2, 0, 0, H / 2]}
-        fill={sideColor}
-        listening={false}
-      />
-
-      {/* team accent dot */}
-      <Circle
-        x={left + PAD_X + 4}
-        y={0}
-        radius={5}
-        fill={squad.color}
-        stroke="#0c0e12"
-        strokeWidth={1}
+        fill={pillCol}
+        opacity={0.14}
         listening={false}
       />
 
       <Text
-        x={left + PAD_X + 16}
+        x={left + PAD_X}
         y={-FONT / 2}
-        width={w - PAD_X * 2 - 16 - BADGE_W}
+        width={w - PAD_X * 2 - BADGE_W}
         text={name}
         fontSize={FONT}
         fontStyle="bold"
@@ -162,6 +143,8 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
         height={18}
         cornerRadius={9}
         fill={squad.color}
+        stroke="#0c0e12"
+        strokeWidth={1}
         listening={false}
       />
       <Text
@@ -185,7 +168,7 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
             height={17}
             cornerRadius={5}
             fill="rgba(12,14,18,0.92)"
-            stroke={sideColor}
+            stroke={pillCol}
             strokeWidth={1}
             listening={false}
           />
