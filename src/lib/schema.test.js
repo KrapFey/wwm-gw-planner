@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emptyStrategy, migrateStrategy, makeSquad, makePlayer } from './schema.js'
+import { emptyStrategy, migrateStrategy } from './schema.js'
 
 describe('emptyStrategy', () => {
   it('has the tactical arrays and no view', () => {
@@ -10,21 +10,6 @@ describe('emptyStrategy', () => {
     expect(s.notes).toEqual([])
     expect(s.timers).toEqual([])
     expect(s.view).toBeUndefined()
-  })
-})
-
-describe('makeSquad / makePlayer', () => {
-  it('a squad has a token slot, a category, a blank name, and no leader field', () => {
-    const q = makeSquad({ side: 'ally', targetSize: 5 })
-    expect(q).toMatchObject({ side: 'ally', category: 'attack', name: '', token: null })
-    expect(q).not.toHaveProperty('leaderId')
-  })
-  it('makeSquad keeps an explicit defence category', () => {
-    expect(makeSquad({ side: 'enemy', category: 'defence' }).category).toBe('defence')
-  })
-  it('a player is just a role slot', () => {
-    const p = makePlayer({ side: 'enemy' })
-    expect(p).toEqual({ id: undefined, side: 'enemy', role: 'DPS', squadId: null })
   })
 })
 

@@ -60,36 +60,6 @@ const PILL_COLORS = {
 export const pillColor = (side = 'ally', category = 'attack') =>
   (PILL_COLORS[side] ?? PILL_COLORS.ally)[category === 'defence' ? 'defence' : 'attack']
 
-export function makeSquad({
-  side,
-  category = 'attack',
-  name = '',
-  lane = 'Unassigned',
-  targetSize = DEFAULT_SQUAD_SIZE,
-  color
-}) {
-  return {
-    id: undefined, // filled by store
-    side,
-    category: normalizeCategory(category),
-    name, // '' = show the derived default name; user may override
-    lane,
-    targetSize,
-    color: color ?? squadColorForIndex(0, side),
-    token: null
-  }
-}
-
-// A player is just a role slot within a team.
-export function makePlayer({ side, role = 'DPS', squadId = null }) {
-  return {
-    id: undefined, // filled by store
-    side,
-    role,
-    squadId
-  }
-}
-
 export function emptyStrategy() {
   const now = new Date().toISOString()
   return {
