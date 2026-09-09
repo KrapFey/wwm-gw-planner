@@ -44,8 +44,10 @@ import {
   IconTriangle,
   IconLine,
   IconHelp,
-  IconTrash
+  IconTrash,
+  IconImage
 } from '../Icons.jsx'
+import { downloadBoardImage } from '../../lib/strategyFile.js'
 
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 4
@@ -127,6 +129,7 @@ export default function BattleMap() {
   const drawings = useStore((s) => s.strategy.drawings)
   const phases = useStore((s) => s.strategy.phases)
   const fixtures = useStore((s) => s.layout.fixtures)
+  const stratName = useStore((s) => s.strategy.meta.name)
   const view = useStore((s) => s.view)
   const pb = useStore((s) => s.playback)
   const setView = useStore((s) => s.setView)
@@ -733,6 +736,15 @@ export default function BattleMap() {
         {!editLayout && (
           <>
             <span className="ctb-div" />
+            <button
+              className="dock-btn"
+              onClick={() =>
+                downloadBoardImage(stageRef.current, stratName, { width: MAP_W, height: MAP_H })
+              }
+              title="Export the board as a PNG"
+            >
+              <IconImage />
+            </button>
             <div className="ctb-menu">
               <button
                 className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
