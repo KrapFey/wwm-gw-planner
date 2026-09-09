@@ -1453,3 +1453,23 @@ select {
     right: 88vw;
   }
 }
+
+/* ---- PWA update toast --------------------------------------------- */
+.update-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(12px);
+}

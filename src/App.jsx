@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import TopBar from './components/TopBar.jsx'
 import RosterPanel from './components/roster/RosterPanel.jsx'
 import BattleMap from './components/map/BattleMap.jsx'
+import UpdateToast from './components/UpdateToast.jsx'
 import { useStore, doUndo, doRedo } from './store/useStore.js'
 import { downloadStrategy } from './lib/strategyFile.js'
 
@@ -62,6 +63,7 @@ export default function App() {
 
         <RosterPanel sideId="enemy" />
       </div>
+      <UpdateToast />
     </div>
   )
 }

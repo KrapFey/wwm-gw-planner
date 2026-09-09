@@ -12,7 +12,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' so a new build shows a "reload" toast instead of swapping
+      // the service worker out from under the user mid-plan (see UpdateToast).
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
         name: 'WWM Guild War Planner',
