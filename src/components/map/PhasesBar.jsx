@@ -26,12 +26,15 @@ export default function PhasesBar() {
   const removePhase = useStore((s) => s.removePhase)
   const renamePhase = useStore((s) => s.renamePhase)
   const movePhase = useStore((s) => s.movePhase)
+  const movePhaseTo = useStore((s) => s.movePhaseTo)
   const setPhaseTiming = useStore((s) => s.setPhaseTiming)
   const setPhasePath = useStore((s) => s.setPhasePath)
   const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
 
   const [visOpen, setVisOpen] = useState(false)
   const [pathsOpen, setPathsOpen] = useState(false)
+  const [dragId, setDragId] = useState(null)
+  const [dropIdx, setDropIdx] = useState(null)
   const visRef = useRef(null)
   const pathsRef = useRef(null)
   useEffect(() => {
@@ -105,23 +108,56 @@ export default function PhasesBar() {
 
         <span className="sep" />
 
-        <div className="pb-chips">
+        <div
+          className="pb-chips"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={() => {
+            if (dragId && dropIdx != null) movePhaseTo(dragId, dropIdx)
+            setDragId(null)
+            setDropIdx(null)
+          }}
+        >
           <button
             className={'pb-chip' + (chipActive(-1) ? ' on' : '')}
             onClick={() => selectPhase(null)}
+            onDragOver={(e) => {
+              if (dragId) {
+                e.preventDefault()
+                setDropIdx(0)
+              }
+            }}
           >
             Start
           </button>
           {phases.map((p, i) => (
             <button
               key={p.id}
-              className={'pb-chip' + (chipActive(i) ? ' on' : '')}
+              className={
+                'pb-chip' +
+                (chipActive(i) ? ' on' : '') +
+                (dropIdx === i && dragId && dragId !== p.id ? ' drop' : '')
+              }
+              draggable
+              onDragStart={(e) => {
+                setDragId(p.id)
+                e.dataTransfer.effectAllowed = 'move'
+              }}
+              onDragEnd={() => {
+                setDragId(null)
+                setDropIdx(null)
+              }}
+              onDragOver={(e) => {
+                if (dragId) {
+                  e.preventDefault()
+                  setDropIdx(i)
+                }
+              }}
               onClick={() => selectPhase(p.id)}
               onDoubleClick={() => {
                 const n = prompt('Rename phase', p.name)
                 if (n && n.trim()) renamePhase(p.id, n.trim())
               }}
-              title="click to edit · double-click to rename"
+              title="click to edit · double-click to rename · drag to reorder"
             >
               {p.name}
             </button>
@@ -355,6 +391,13 @@ export default function PhasesBar() {
           </button>
           <button className="tiny ghost" onClick={() => movePhase(selPhase.id, 1)}>
             move ›
+          </button>
+          <button
+            className="tiny ghost"
+            title="Duplicate this phase after it"
+            onClick={() => addPhase(selPhase.id)}
+          >
+            Duplicate
           </button>
           <button
             className="tiny ghost"

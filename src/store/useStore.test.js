@@ -210,6 +210,18 @@ describe('planning phases', () => {
     expect(S().playback.phaseId).toBeNull()
   })
 
+  it('movePhaseTo drops a phase at an arbitrary clamped index', () => {
+    seedTwoPills()
+    S().addPhase()
+    S().addPhase()
+    S().addPhase()
+    const [a, b, c] = S().strategy.phases.map((p) => p.id)
+    S().movePhaseTo(c, 0)
+    expect(S().strategy.phases.map((p) => p.id)).toEqual([c, a, b])
+    S().movePhaseTo(c, 99) // clamp to end
+    expect(S().strategy.phases.map((p) => p.id)).toEqual([a, b, c])
+  })
+
   it('setPhasePath assigns/clears a drawn path for a squad', () => {
     seedTwoPills()
     S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 100, 0] })

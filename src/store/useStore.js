@@ -541,6 +541,17 @@ const creator = (set, get) => ({
       s.phases.splice(j, 0, p)
     }),
 
+  // Drop a phase at an arbitrary index (chip drag-reorder).
+  movePhaseTo: (id, index) =>
+    commit(set, get, (s) => {
+      const from = s.phases.findIndex((p) => p.id === id)
+      if (from === -1) return
+      const to = Math.max(0, Math.min(s.phases.length - 1, index))
+      if (from === to) return
+      const [p] = s.phases.splice(from, 1)
+      s.phases.splice(to, 0, p)
+    }),
+
   updatePhaseSquad: (phaseId, squadId, pos) =>
     commit(set, get, (s) => {
       const p = s.phases.find((x) => x.id === phaseId)

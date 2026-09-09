@@ -931,6 +931,12 @@ select {
   border-style: dashed;
   color: var(--text-dim);
 }
+.pb-chip[draggable='true'] {
+  cursor: grab;
+}
+.pb-chip.drop {
+  box-shadow: -3px 0 0 0 var(--accent-2);
+}
 .pb-scrub {
   flex: 1;
   min-width: 90px;
