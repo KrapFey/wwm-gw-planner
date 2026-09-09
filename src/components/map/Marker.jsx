@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Group, Circle, Line, Ellipse, Rect, Text } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { MARKER_KINDS } from '../../lib/tacticalDefs.js'
@@ -9,13 +10,19 @@ const R = 15
 // A modern map-pin: coloured teardrop that can be rotated to aim, a crisp
 // vector icon that stays upright in the head, a ground shadow, and a compact
 // caption chip.
-export default function Marker({ marker, selected, onSelect, override, onMove, onRemove, locked = false }) {
+function Marker({ marker, selected, onSelect, override, editingPhase = null, locked = false }) {
   const updateMarker = useStore((s) => s.updateMarker)
+  const updatePhaseMarker = useStore((s) => s.updatePhaseMarker)
   const removeMarker = useStore((s) => s.removeMarker)
+  const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
   const def = MARKER_KINDS[marker.kind] ?? MARKER_KINDS.attack
 
-  const move = onMove ?? ((pos) => updateMarker(marker.id, pos))
-  const remove = onRemove ?? (() => removeMarker(marker.id))
+  const move = (pos) =>
+    editingPhase ? updatePhaseMarker(editingPhase, marker.id, pos) : updateMarker(marker.id, pos)
+  const remove = () =>
+    editingPhase
+      ? togglePhaseHidden(editingPhase, 'markers', marker.id)
+      : removeMarker(marker.id)
   const sc = marker.scale || 1
   const rot = marker.rotation || 0
   const label = (marker.label ?? def.label).toUpperCase()
@@ -108,3 +115,5 @@ export default function Marker({ marker, selected, onSelect, override, onMove, o
     </Group>
   )
 }
+
+export default memo(Marker)

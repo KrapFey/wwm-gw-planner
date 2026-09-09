@@ -19,12 +19,49 @@ const seedFixtures = () => DEFAULT_FIXTURES.map((f) => ({ ...f }))
 
 const STORAGE_KEY = 'wwm-gw-planner'
 
-// Real localStorage in the browser; an in-memory shim elsewhere (tests / SSR)
-// so persist never touches an undefined global.
+// Coalesce rapid writes (dragging tokens, typing a name, scrubbing) into one
+// localStorage.setItem — the whole doc library is re-serialised on every write.
+// Flushed on hide/unload so nothing is lost.
+function debouncedStorage(base, ms = 400) {
+  let timer = null
+  let pending = null
+  const flush = () => {
+    if (timer) clearTimeout(timer)
+    timer = null
+    if (pending) {
+      base.setItem(pending[0], pending[1])
+      pending = null
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', flush)
+    window.addEventListener('beforeunload', flush)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flush()
+    })
+  }
+  return {
+    getItem: (k) => (pending && pending[0] === k ? pending[1] : base.getItem(k)),
+    setItem: (k, v) => {
+      pending = [k, v]
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(flush, ms)
+    },
+    removeItem: (k) => {
+      if (pending && pending[0] === k) pending = null
+      if (timer) clearTimeout(timer)
+      timer = null
+      base.removeItem(k)
+    }
+  }
+}
+
+// Real localStorage in the browser (debounced); an in-memory shim elsewhere
+// (tests / SSR) so persist never touches an undefined global.
 const memBacking = new Map()
 const appStorage =
   typeof localStorage !== 'undefined'
-    ? localStorage
+    ? debouncedStorage(localStorage)
     : {
         getItem: (k) => (memBacking.has(k) ? memBacking.get(k) : null),
         setItem: (k, v) => memBacking.set(k, v),

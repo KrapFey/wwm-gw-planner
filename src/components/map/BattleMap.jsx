@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Stage, Layer, Group, Circle, Line as KLine } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
@@ -115,14 +115,14 @@ export default function BattleMap() {
     }
   }
 
-  const selectMarker = (id) => {
+  const selectMarker = useCallback((id) => {
     setSelMarker(id)
     setSelDrawing(null)
-  }
-  const selectDrawing = (id) => {
+  }, [])
+  const selectDrawing = useCallback((id) => {
     setSelDrawing(id)
     setSelMarker(null)
-  }
+  }, [])
 
   const squads = useStore((s) => s.strategy.squads)
   const markers = useStore((s) => s.strategy.markers)
@@ -135,13 +135,10 @@ export default function BattleMap() {
   const setView = useStore((s) => s.setView)
   const setPlayback = useStore((s) => s.setPlayback)
   const selectPhase = useStore((s) => s.selectPhase)
-  const updatePhaseSquad = useStore((s) => s.updatePhaseSquad)
-  const updatePhaseMarker = useStore((s) => s.updatePhaseMarker)
   const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
   const setSquadToken = useStore((s) => s.setSquadToken)
   const clearTokens = useStore((s) => s.clearTokens)
   const addMarker = useStore((s) => s.addMarker)
-  const updateMarker = useStore((s) => s.updateMarker)
   const removeMarker = useStore((s) => s.removeMarker)
   const clearMarkers = useStore((s) => s.clearMarkers)
   const addDrawing = useStore((s) => s.addDrawing)
@@ -150,9 +147,13 @@ export default function BattleMap() {
   const addNote = useStore((s) => s.addNote)
   const addTimer = useStore((s) => s.addTimer)
 
-  const placedSquads = squads
-    .filter((q) => q.token)
-    .sort((a, b) => (a.token.at || 0) - (b.token.at || 0))
+  const placedSquads = useMemo(
+    () =>
+      squads
+        .filter((q) => q.token)
+        .sort((a, b) => (a.token.at || 0) - (b.token.at || 0)),
+    [squads]
+  )
   const boardCount = placedSquads.length
   const interactive = tool === 'select' && !editLayout && !pb.playing
 
@@ -174,22 +175,27 @@ export default function BattleMap() {
 
   // Phase-animation frame: the interpolated board while the phase editor is
   // open (null otherwise). Also gates which board a drag writes to.
-  const sf = pb.open && phases.length ? startFrame(placedSquads, markers) : null
-  const frame = sf ? frameAt(sf, phases, pb.t, pathPolys) : null
+  const sf = useMemo(
+    () => (pb.open && phases.length ? startFrame(placedSquads, markers) : null),
+    [pb.open, phases, placedSquads, markers]
+  )
+  const frame = useMemo(
+    () => (sf ? frameAt(sf, phases, pb.t, pathPolys) : null),
+    [sf, phases, pb.t, pathPolys]
+  )
   const scrubbing = frame && (pb.playing || pb.t > 0)
   // motion trail: each squad's position at the start of the phase now animating
   // (previous keyframe, or the live Start frame) -> a dashed line to where it is.
-  const trailFrom = scrubbing
-    ? frame.phaseIndex > 0
+  const trailFrom = useMemo(() => {
+    if (!scrubbing) return null
+    return frame.phaseIndex > 0
       ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex - 1), pathPolys).squads
       : sf.squads
-    : null
+  }, [scrubbing, sf, phases, pathPolys, frame?.phaseIndex])
+  // the phase whose board a pill/marker drag writes to (null = live board);
+  // SquadToken / Marker take this and do the store call themselves so they
+  // memoize cleanly
   const editingPhase = pb.open && pb.phaseId ? pb.phaseId : null
-
-  const onSquadMoved = (id, pos) =>
-    editingPhase ? updatePhaseSquad(editingPhase, id, pos) : setSquadToken(id, pos)
-  const onMarkerMoved = (id, pos) =>
-    editingPhase ? updatePhaseMarker(editingPhase, id, pos) : updateMarker(id, pos)
 
   useLayoutEffect(() => {
     const el = wrapRef.current
@@ -880,12 +886,7 @@ export default function BattleMap() {
                     key={q.id}
                     squad={q}
                     override={frame?.squads[q.id]}
-                    onMove={pb.open ? (pos) => onSquadMoved(q.id, pos) : undefined}
-                    onRemove={
-                      editingPhase
-                        ? () => togglePhaseHidden(editingPhase, 'squads', q.id)
-                        : undefined
-                    }
+                    editingPhase={editingPhase}
                     locked={pb.playing}
                   />
                 )
@@ -903,12 +904,7 @@ export default function BattleMap() {
                     selected={m.id === selMarker}
                     onSelect={selectMarker}
                     override={frame?.markers[m.id]}
-                    onMove={pb.open ? (pos) => onMarkerMoved(m.id, pos) : undefined}
-                    onRemove={
-                      editingPhase
-                        ? () => togglePhaseHidden(editingPhase, 'markers', m.id)
-                        : undefined
-                    }
+                    editingPhase={editingPhase}
                     locked={pb.playing}
                   />
                 )

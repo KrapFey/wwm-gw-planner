@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Group, Rect, Text, Circle } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { squadStats, squadLabel } from '../../lib/selectors.js'
@@ -17,15 +18,28 @@ const DISC_R = 15
 // red / Defense orange). The count badge keeps the team's own accent so
 // individual teams stay tellable. Middle-click collapses it to a bare disc:
 // category colour ring, team colour fill.
-export default function SquadToken({ squad, override, onMove, onRemove, locked = false }) {
+// `editingPhase` (a phase id or null) is the only interaction prop, so this
+// component stays cheap to memoize — it does the store calls itself.
+function SquadToken({ squad, override, editingPhase = null, locked = false }) {
   const setSquadToken = useStore((s) => s.setSquadToken)
-  const strategy = useStore((s) => s.strategy)
+  const updatePhaseSquad = useStore((s) => s.updatePhaseSquad)
+  const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
+  // only the players (for the fill/role tally) and squads (for the ordinal in
+  // the default name) — not the whole doc, so marker/drawing/note edits don't
+  // re-render every pill
+  const players = useStore((s) => s.strategy.players)
+  const squads = useStore((s) => s.strategy.squads)
   const collapsed = useStore((s) => !!s.ui.collapsedPills[squad.id])
   const togglePillCollapsed = useStore((s) => s.togglePillCollapsed)
+  const strategy = { players, squads }
   const { fill, byRole } = squadStats(strategy, squad)
 
-  const move = onMove ?? ((pos) => setSquadToken(squad.id, pos))
-  const remove = onRemove ?? (() => setSquadToken(squad.id, null))
+  const move = (pos) =>
+    editingPhase ? updatePhaseSquad(editingPhase, squad.id, pos) : setSquadToken(squad.id, pos)
+  const remove = () =>
+    editingPhase
+      ? togglePhaseHidden(editingPhase, 'squads', squad.id)
+      : setSquadToken(squad.id, null)
   const x = override?.x ?? squad.token.x
   const y = override?.y ?? squad.token.y
 
@@ -189,3 +203,5 @@ export default function SquadToken({ squad, override, onMove, onRemove, locked =
     </Group>
   )
 }
+
+export default memo(SquadToken)
