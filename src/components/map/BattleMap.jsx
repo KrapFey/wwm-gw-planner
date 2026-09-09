@@ -22,7 +22,8 @@ import LayoutEditorPanel from './LayoutEditorPanel.jsx'
 import PhasesBar from './PhasesBar.jsx'
 import CanvasToolbar from './CanvasToolbar.jsx'
 import { startFrame, frameAt, totalDuration, phaseArrivalTime } from '../../lib/playback.js'
-import { downloadBoardImage } from '../../lib/strategyFile.js'
+import { downloadBoardImage, downloadAnimation } from '../../lib/strategyFile.js'
+import { recordBoardVideo, videoRecordingSupported } from '../../lib/recordBoard.js'
 
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 4
@@ -50,6 +51,7 @@ export default function BattleMap() {
   const [selMarker, setSelMarker] = useState(null)
   const [selDrawing, setSelDrawing] = useState(null)
   const [toolbarSlot, setToolbarSlot] = useState(null)
+  const [recording, setRecording] = useState(false)
 
   // the canvas toolbar renders up in the top bar
   useEffect(() => {
@@ -447,6 +449,44 @@ export default function BattleMap() {
     }
   }
 
+  // Play the phase animation once and record the board to a video file.
+  async function exportAnimation() {
+    const total = totalDuration(phases)
+    if (!total || recording || !stageRef.current) return
+    if (!videoRecordingSupported()) {
+      alert('Video recording isn’t supported in this browser.')
+      return
+    }
+    const restore = { ...useStore.getState().playback }
+    setRecording(true)
+    try {
+      setPlayback({ open: true, phaseId: null, playing: false, t: 0 })
+      await new Promise(requestAnimationFrame)
+      await new Promise(requestAnimationFrame)
+      const blob = await recordBoardVideo(stageRef.current, () =>
+        new Promise((resolve) => {
+          const started = performance.now()
+          setPlayback({ playing: true, t: 0 })
+          const check = () => {
+            if (performance.now() - started >= total + 250) {
+              setPlayback({ playing: false })
+              resolve()
+            } else {
+              requestAnimationFrame(check)
+            }
+          }
+          requestAnimationFrame(check)
+        })
+      )
+      downloadAnimation(blob, stratName)
+    } catch (err) {
+      alert(err.message || 'Recording failed')
+    } finally {
+      setPlayback(restore)
+      setRecording(false)
+    }
+  }
+
   return (
     <div className="map">
       {toolbarSlot &&
@@ -647,7 +687,9 @@ export default function BattleMap() {
           />
         )}
 
-        {pb.open && <PhasesBar />}
+        {pb.open && (
+          <PhasesBar onExportVideo={exportAnimation} recording={recording} />
+        )}
       </div>
     </div>
   )

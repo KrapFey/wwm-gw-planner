@@ -8,11 +8,18 @@ import {
 } from '../../lib/playback.js'
 import { MARKER_KINDS, DRAW_TOOL_LABEL, PATH_TOOLS } from '../../lib/tacticalDefs.js'
 import { squadLabel } from '../../lib/selectors.js'
-import { IconPlay, IconPause, IconSkipBack, IconSkipFwd, IconX } from '../Icons.jsx'
+import {
+  IconPlay,
+  IconPause,
+  IconSkipBack,
+  IconSkipFwd,
+  IconFilm,
+  IconX
+} from '../Icons.jsx'
 
 const secs = (ms) => (ms / 1000).toFixed(1)
 
-export default function PhasesBar() {
+export default function PhasesBar({ onExportVideo, recording = false }) {
   const strategy = useStore((s) => s.strategy)
   const phases = useStore((s) => s.strategy.phases)
   const drawings = useStore((s) => s.strategy.drawings)
@@ -211,9 +218,21 @@ export default function PhasesBar() {
           </>
         )}
 
+        {hasPhases && onExportVideo && (
+          <button
+            className={'dock-btn' + (recording ? ' on' : '')}
+            title={recording ? 'Recording…' : 'Export animation as a video'}
+            disabled={recording || pb.playing}
+            onClick={onExportVideo}
+          >
+            <IconFilm />
+          </button>
+        )}
+
         <button
           className="dock-btn"
           title="Close phase editor"
+          disabled={recording}
           onClick={() => setPlayback({ open: false, playing: false, phaseId: null, t: 0 })}
         >
           <IconX />

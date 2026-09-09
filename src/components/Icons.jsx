@@ -52,6 +52,9 @@ export const IconCopy = () => (
 export const IconImage = () => (
   <S><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="m4 19 5-5 4 4 3-3 4 4" /></S>
 )
+export const IconFilm = () => (
+  <S><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M8 4v16M16 4v16M3 9h5M3 15h5M16 9h5M16 15h5" /></S>
+)
 export const IconX = () => (<S><path d="M6 6l12 12M18 6 6 18" /></S>)
 export const IconCheck = () => (<S><path d="M5 12l5 5 9-11" /></S>)
 export const IconTimeline = () => (

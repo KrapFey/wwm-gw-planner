@@ -28,6 +28,13 @@ export function downloadStrategy(strategy) {
   triggerDownload(url, `gw-${slug(strategy?.meta?.name)}-${stamp()}.json`, true)
 }
 
+// Save a recorded animation Blob (webm/mp4) with the strategy's name.
+export function downloadAnimation(blob, name) {
+  const url = URL.createObjectURL(blob)
+  const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
+  triggerDownload(url, `gw-${slug(name)}-${stamp()}.${ext}`, true)
+}
+
 // Snapshot the whole board (map at 1:1, not the current pan/zoom) to a PNG.
 export function downloadBoardImage(stage, name, { width, height }) {
   if (!stage) return
