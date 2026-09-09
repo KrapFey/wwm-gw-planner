@@ -4,12 +4,9 @@ import { Stage, Layer, Group, Circle, Line as KLine } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { MAP_W, MAP_H, clampToMap } from '../../lib/mapLayout.js'
 import {
-  MARKER_KINDS,
-  MARKER_KIND_LIST,
   DRAW_COLORS,
   DRAW_WIDTHS,
   SHAPE_TOOLS,
-  SHAPE_META,
   BOX_DRAW_TOOLS,
   drawingPolyline,
   reduceCurvedArrow
@@ -23,57 +20,13 @@ import DrawingShape from './DrawingShape.jsx'
 import AnnotationsOverlay from './AnnotationsOverlay.jsx'
 import LayoutEditorPanel from './LayoutEditorPanel.jsx'
 import PhasesBar from './PhasesBar.jsx'
+import CanvasToolbar from './CanvasToolbar.jsx'
 import { startFrame, frameAt, totalDuration, phaseArrivalTime } from '../../lib/playback.js'
-import {
-  IconCursor,
-  IconPencil,
-  IconArrow,
-  IconArrowCurve,
-  IconEraser,
-  IconFlag,
-  IconNote,
-  IconClock,
-  IconLayers,
-  IconTimeline,
-  IconPlus,
-  IconMinus,
-  IconFit,
-  IconShapes,
-  IconSquare,
-  IconCircle,
-  IconTriangle,
-  IconLine,
-  IconHelp,
-  IconTrash,
-  IconImage
-} from '../Icons.jsx'
 import { downloadBoardImage } from '../../lib/strategyFile.js'
 
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 4
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
-
-const SHAPE_ICON = {
-  rect: IconSquare,
-  ellipse: IconCircle,
-  triangle: IconTriangle,
-  line: IconLine
-}
-
-const SHORTCUTS = [
-  ['V', 'Select / pan'],
-  ['D', 'Freehand draw'],
-  ['A', 'Arrow'],
-  ['G', 'Curved arrow'],
-  ['R', 'Rectangle'],
-  ['C', 'Ellipse'],
-  ['T', 'Triangle'],
-  ['L', 'Line'],
-  ['E', 'Eraser'],
-  ['Del', 'Delete selection'],
-  ['Esc', 'Back to select'],
-  ['Ctrl 0', 'Reset zoom']
-]
 
 export default function BattleMap() {
   const wrapRef = useRef(null)
@@ -498,282 +451,44 @@ export default function BattleMap() {
     <div className="map">
       {toolbarSlot &&
         createPortal(
-          <div className="canvas-toolbar">
-        {!editLayout && (
-          <>
-            <div className="ctb-group">
-              <button
-                className={'dock-btn' + (tool === 'select' ? ' on' : '')}
-                onClick={() => setTool('select')}
-                title="Select / pan (V)"
-              >
-                <IconCursor />
-              </button>
-              <button
-                className={'dock-btn' + (tool === 'pen' ? ' on' : '')}
-                onClick={() => setTool('pen')}
-                title="Freehand draw (D)"
-              >
-                <IconPencil />
-              </button>
-              <button
-                className={'dock-btn' + (tool === 'arrow' ? ' on' : '')}
-                onClick={() => setTool('arrow')}
-                title="Arrow (A)"
-              >
-                <IconArrow />
-              </button>
-              <button
-                className={'dock-btn' + (tool === 'carrow' ? ' on' : '')}
-                onClick={() => setTool('carrow')}
-                title="Curved arrow (G)"
-              >
-                <IconArrowCurve />
-              </button>
-              <div className="ctb-menu">
-                <button
-                  className={'dock-btn' + (isShapeTool || shapePalette ? ' on' : '')}
-                  onClick={() => {
-                    setShapePalette((v) => !v)
-                    setMarkerPalette(false)
-                  }}
-                  title="Shapes — rectangle (R), ellipse (C), triangle (T), line (L)"
-                >
-                  <IconShapes />
-                </button>
-                {shapePalette && (
-                  <div className="ctb-drop">
-                    {SHAPE_TOOLS.map((s) => {
-                      const Icon = SHAPE_ICON[s]
-                      return (
-                        <button
-                          key={s}
-                          className={'ctb-drop-item' + (tool === s ? ' on' : '')}
-                          onClick={() => {
-                            setTool(s)
-                            setShapePalette(false)
-                          }}
-                        >
-                          <Icon />
-                          {SHAPE_META[s].label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-              <button
-                className={'dock-btn' + (tool === 'erase' ? ' on' : '')}
-                onClick={() => setTool('erase')}
-                title="Eraser — click or drag over lines to delete (E)"
-              >
-                <IconEraser />
-              </button>
-            </div>
-
-            <span className="ctb-div" />
-
-            <div className="ctb-group">
-              <div className="ctb-menu">
-                <button
-                  className={'dock-btn' + (markerPalette ? ' on' : '')}
-                  onClick={() => {
-                    setMarkerPalette((v) => !v)
-                    setShapePalette(false)
-                  }}
-                  title="Objective markers"
-                >
-                  <IconFlag />
-                </button>
-                {markerPalette && (
-                  <div className="ctb-drop">
-                    {MARKER_KIND_LIST.map((k) => (
-                      <button
-                        key={k}
-                        className="ctb-drop-item"
-                        onClick={() => {
-                          addMarker(k, centerLogical())
-                          setMarkerPalette(false)
-                        }}
-                      >
-                        <span
-                          className="mk-dot"
-                          style={{ background: MARKER_KINDS[k].color }}
-                        />
-                        {MARKER_KINDS[k].label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                className="dock-btn"
-                onClick={() => addNote(centerLogical())}
-                title="Add note"
-              >
-                <IconNote />
-              </button>
-              <button
-                className="dock-btn"
-                onClick={() => addTimer(centerLogical())}
-                title="Add timer"
-              >
-                <IconClock />
-              </button>
-            </div>
-
-            <span className="ctb-div" />
-
-            <div className="ctb-group">
-              <button
-                className={'dock-btn' + (pb.open ? ' on' : '')}
-                onClick={togglePhases}
-                title="Plan phases (animation)"
-              >
-                <IconTimeline />
-              </button>
-              <button
-                className="dock-btn"
-                onClick={toggleEditLayout}
-                title="Edit map layout"
-              >
-                <IconLayers />
-              </button>
-            </div>
-
-          </>
-        )}
-
-        {!editLayout &&
-          (boardCount > 0 || markers.length > 0 || drawings.length > 0) && (
-            <>
-              <span className="ctb-div" />
-              <div className="ctb-menu">
-                <button
-                  className={'dock-btn' + (clearMenu ? ' on' : '')}
-                  onClick={() => setClearMenu((v) => !v)}
-                  title="Clear items"
-                >
-                  <IconTrash />
-                </button>
-                {clearMenu && (
-                  <div className="ctb-drop ctb-drop--right">
-                    {boardCount > 0 && (
-                      <button
-                        className="ctb-drop-item"
-                        onClick={() => {
-                          if (confirm('Remove all team markers from the map?')) clearTokens()
-                          setClearMenu(false)
-                        }}
-                      >
-                        Clear teams
-                      </button>
-                    )}
-                    {markers.length > 0 && (
-                      <button
-                        className="ctb-drop-item"
-                        onClick={() => {
-                          clearMarkers()
-                          setClearMenu(false)
-                        }}
-                      >
-                        Clear markers
-                      </button>
-                    )}
-                    {drawings.length > 0 && (
-                      <button
-                        className="ctb-drop-item"
-                        onClick={() => {
-                          clearDrawings()
-                          setClearMenu(false)
-                        }}
-                      >
-                        Clear drawings
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-        <span className="ctb-spacer" />
-        {!editLayout && (tool === 'pen' || tool === 'arrow' || isShapeTool) && (
-          <div className="ctb-group ctb-draw">
-            {DRAW_COLORS.map((c) => (
-              <button
-                key={c}
-                className={'swatch' + (drawColor === c ? ' on' : '')}
-                style={{ background: c }}
-                onClick={() => setDrawColor(c)}
-                title="Colour"
-              />
-            ))}
-            <span className="ctb-div" />
-            {DRAW_WIDTHS.map((w) => (
-              <button
-                key={w.value}
-                className={'tiny' + (drawWidth === w.value ? ' primary' : ' ghost')}
-                onClick={() => setDrawWidth(w.value)}
-              >
-                {w.label}
-              </button>
-            ))}
-          </div>
-        )}
-        <span className="ctb-spacer" />
-
-        <span className="ctb-div" />
-        <div className="ctb-group">
-          <button className="dock-btn" onClick={() => zoomBy(1 / 1.2)} title="Zoom out">
-            <IconMinus />
-          </button>
-          <button className="zoom-val" onClick={() => zoomTo(1)} title="Reset zoom">
-            {Math.round(view.zoom * 100)}%
-          </button>
-          <button className="dock-btn" onClick={() => zoomBy(1.2)} title="Zoom in">
-            <IconPlus />
-          </button>
-          <button className="dock-btn" onClick={() => fit()} title="Fit to screen">
-            <IconFit />
-          </button>
-        </div>
-
-        {!editLayout && (
-          <>
-            <span className="ctb-div" />
-            <button
-              className="dock-btn"
-              onClick={() =>
-                downloadBoardImage(stageRef.current, stratName, { width: MAP_W, height: MAP_H })
-              }
-              title="Export the board as a PNG"
-            >
-              <IconImage />
-            </button>
-            <div className="ctb-menu">
-              <button
-                className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
-                onClick={() => setShortcutsOpen((v) => !v)}
-                title="Keyboard shortcuts"
-              >
-                <IconHelp />
-              </button>
-              {shortcutsOpen && (
-                <div className="ctb-drop ctb-drop--right shortcuts-pop">
-                  <div className="shortcuts-title">Keyboard shortcuts</div>
-                  {SHORTCUTS.map(([key, label]) => (
-                    <div className="shortcuts-row" key={key}>
-                      <kbd>{key}</kbd>
-                      <span>{label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-          </div>,
+          <CanvasToolbar
+            editLayout={editLayout}
+            tool={tool}
+            setTool={setTool}
+            isShapeTool={isShapeTool}
+            shapePalette={shapePalette}
+            setShapePalette={setShapePalette}
+            markerPalette={markerPalette}
+            setMarkerPalette={setMarkerPalette}
+            clearMenu={clearMenu}
+            setClearMenu={setClearMenu}
+            shortcutsOpen={shortcutsOpen}
+            setShortcutsOpen={setShortcutsOpen}
+            phasesOpen={pb.open}
+            boardCount={boardCount}
+            markerCount={markers.length}
+            drawingCount={drawings.length}
+            drawColor={drawColor}
+            setDrawColor={setDrawColor}
+            drawWidth={drawWidth}
+            setDrawWidth={setDrawWidth}
+            zoomPct={Math.round(view.zoom * 100)}
+            addMarker={addMarker}
+            addNote={addNote}
+            addTimer={addTimer}
+            centerLogical={centerLogical}
+            togglePhases={togglePhases}
+            toggleEditLayout={toggleEditLayout}
+            clearTokens={clearTokens}
+            clearMarkers={clearMarkers}
+            clearDrawings={clearDrawings}
+            zoomBy={zoomBy}
+            zoomTo={zoomTo}
+            fit={fit}
+            onExportPng={() =>
+              downloadBoardImage(stageRef.current, stratName, { width: MAP_W, height: MAP_H })
+            }
+          />,
           toolbarSlot
         )}
 
