@@ -14,12 +14,18 @@ import {
   IconSkipBack,
   IconSkipFwd,
   IconFilm,
+  IconTrail,
   IconX
 } from '../Icons.jsx'
 
 const secs = (ms) => (ms / 1000).toFixed(1)
 
-export default function PhasesBar({ onExportVideo, recording = false }) {
+export default function PhasesBar({
+  onExportVideo,
+  recording = false,
+  showTrail = true,
+  onToggleTrail
+}) {
   const strategy = useStore((s) => s.strategy)
   const phases = useStore((s) => s.strategy.phases)
   const drawings = useStore((s) => s.strategy.drawings)
@@ -214,6 +220,13 @@ export default function PhasesBar({ onExportVideo, recording = false }) {
               onClick={() => setPlayback({ loop: !pb.loop })}
             >
               ⟳
+            </button>
+            <button
+              className={'dock-btn' + (showTrail ? ' on' : '')}
+              title={showTrail ? 'Hide motion trail' : 'Show motion trail'}
+              onClick={onToggleTrail}
+            >
+              <IconTrail />
             </button>
           </>
         )}

@@ -55,6 +55,9 @@ export const IconImage = () => (
 export const IconFilm = () => (
   <S><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M8 4v16M16 4v16M3 9h5M3 15h5M16 9h5M16 15h5" /></S>
 )
+export const IconTrail = () => (
+  <S><circle cx="5" cy="18" r="2" fill="currentColor" stroke="none" /><path d="M8 15l3-3M14 9l3-3" strokeDasharray="3 3" /><circle cx="19" cy="5" r="1.5" fill="currentColor" stroke="none" /></S>
+)
 export const IconX = () => (<S><path d="M6 6l12 12M18 6 6 18" /></S>)
 export const IconCheck = () => (<S><path d="M5 12l5 5 9-11" /></S>)
 export const IconTimeline = () => (

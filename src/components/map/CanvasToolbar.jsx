@@ -49,6 +49,8 @@ const SHORTCUTS = [
   ['L', 'Line'],
   ['E', 'Eraser'],
   ['Del', 'Delete selection'],
+  ['Ctrl D', 'Duplicate selected drawing'],
+  ['[ / ]', 'Drawing back / forward'],
   ['Esc', 'Back to select'],
   ['Ctrl 0', 'Reset zoom']
 ]

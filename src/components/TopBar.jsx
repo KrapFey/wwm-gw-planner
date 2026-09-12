@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { useStore, useTemporal, doUndo, doRedo } from '../store/useStore.js'
+import { useEffect, useRef, useState } from 'react'
+import { useStore, useTemporal, doUndo, doRedo, subscribeSaved } from '../store/useStore.js'
 import { downloadStrategy, readStrategyFile } from '../lib/strategyFile.js'
 import StrategyMenu from './StrategyMenu.jsx'
 
@@ -20,6 +20,20 @@ export default function TopBar() {
   const futureCount = useTemporal((s) => s.futureStates.length)
 
   const fileRef = useRef(null)
+
+  // Flash "Saved ✓" whenever a debounced write actually lands, then fall back
+  // to the static hint.
+  const [justSaved, setJustSaved] = useState(false)
+  const savedTimer = useRef(null)
+  useEffect(
+    () =>
+      subscribeSaved(() => {
+        setJustSaved(true)
+        clearTimeout(savedTimer.current)
+        savedTimer.current = setTimeout(() => setJustSaved(false), 1500)
+      }),
+    []
+  )
 
   const onImport = async (e) => {
     const file = e.target.files?.[0]
@@ -78,7 +92,9 @@ export default function TopBar() {
           the free space, and drops to its own full-width row on smaller screens */}
       <div className="topbar-tools" id="canvas-toolbar-slot" />
 
-      <span className="hint">Autosaves locally</span>
+      <span className={'hint' + (justSaved ? ' saved' : '')}>
+        {justSaved ? '✓ Saved' : 'Autosaves locally'}
+      </span>
       <div className="divider" />
 
       <div className="group">

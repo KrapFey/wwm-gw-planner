@@ -143,6 +143,21 @@ describe('team + marker store logic', () => {
     S().togglePillCollapsed(id)
     expect(S().ui.collapsedPills[id]).toBe(false)
   })
+
+  it('toggleShowTrail flips the persisted onion-skin-trail flag', () => {
+    expect(S().ui.showTrail).toBe(true)
+    S().toggleShowTrail()
+    expect(S().ui.showTrail).toBe(false)
+    S().toggleShowTrail()
+    expect(S().ui.showTrail).toBe(true)
+  })
+
+  it('updateSquad can override the auto-assigned team colour', () => {
+    S().addSquad('ally')
+    const id = S().strategy.squads[0].id
+    S().updateSquad(id, { color: '#123456' })
+    expect(S().strategy.squads[0].color).toBe('#123456')
+  })
 })
 
 describe('planning phases', () => {
@@ -244,6 +259,35 @@ describe('planning phases', () => {
     S().setPhasePath(S().strategy.phases[0].id, q, did)
     S().removeDrawing(did)
     expect(S().strategy.phases[0].paths[q]).toBeUndefined()
+  })
+
+  it('duplicateDrawing copies a drawing, offset, right after the source', () => {
+    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 100, 0] })
+    const src = S().strategy.drawings[0].id
+    const nid = S().duplicateDrawing(src)
+    const ds = S().strategy.drawings
+    expect(ds).toHaveLength(2)
+    expect(ds[1].id).toBe(nid)
+    expect(ds[1].points).toEqual([14, 14, 114, 14])
+    expect(ds[0].points).toEqual([0, 0, 100, 0]) // source untouched
+  })
+
+  it('duplicateDrawing is a no-op for an unknown id', () => {
+    expect(S().duplicateDrawing('nope')).toBeNull()
+    expect(S().strategy.drawings).toHaveLength(0)
+  })
+
+  it('moveDrawing reorders z-order and clamps at the ends', () => {
+    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 1, 1] })
+    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 2, 2] })
+    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 3, 3] })
+    const [a, b, c] = S().strategy.drawings.map((d) => d.id)
+    S().moveDrawing(a, 1) // bring forward one
+    expect(S().strategy.drawings.map((d) => d.id)).toEqual([b, a, c])
+    S().moveDrawing(c, 1) // already last -> clamped, no change
+    expect(S().strategy.drawings.map((d) => d.id)).toEqual([b, a, c])
+    S().moveDrawing(b, -1) // already first -> clamped, no change
+    expect(S().strategy.drawings.map((d) => d.id)).toEqual([b, a, c])
   })
 
   it('removing a team also purges it from every phase board', () => {

@@ -91,6 +91,8 @@ export default function BattleMap() {
   const setPlayback = useStore((s) => s.setPlayback)
   const selectPhase = useStore((s) => s.selectPhase)
   const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
+  const showTrail = useStore((s) => s.ui.showTrail)
+  const toggleShowTrail = useStore((s) => s.toggleShowTrail)
   const setSquadToken = useStore((s) => s.setSquadToken)
   const clearTokens = useStore((s) => s.clearTokens)
   const addMarker = useStore((s) => s.addMarker)
@@ -98,6 +100,8 @@ export default function BattleMap() {
   const clearMarkers = useStore((s) => s.clearMarkers)
   const addDrawing = useStore((s) => s.addDrawing)
   const removeDrawing = useStore((s) => s.removeDrawing)
+  const duplicateDrawing = useStore((s) => s.duplicateDrawing)
+  const moveDrawing = useStore((s) => s.moveDrawing)
   const clearDrawings = useStore((s) => s.clearDrawings)
   const addNote = useStore((s) => s.addNote)
   const addTimer = useStore((s) => s.addTimer)
@@ -142,11 +146,11 @@ export default function BattleMap() {
   // motion trail: each squad's position at the start of the phase now animating
   // (previous keyframe, or the live Start frame) -> a dashed line to where it is.
   const trailFrom = useMemo(() => {
-    if (!scrubbing) return null
+    if (!scrubbing || !showTrail) return null
     return frame.phaseIndex > 0
       ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex - 1), pathPolys).squads
       : sf.squads
-  }, [scrubbing, sf, phases, pathPolys, frame?.phaseIndex])
+  }, [scrubbing, showTrail, sf, phases, pathPolys, frame?.phaseIndex])
   // the phase whose board a pill/marker drag writes to (null = live board);
   // SquadToken / Marker take this and do the store call themselves so they
   // memoize cleanly
@@ -189,6 +193,14 @@ export default function BattleMap() {
       if ((e.ctrlKey || e.metaKey) && e.key === '0') {
         e.preventDefault()
         zoomTo(1)
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        if (selDrawing) {
+          e.preventDefault()
+          const nid = duplicateDrawing(selDrawing)
+          if (nid) selectDrawing(nid)
+        }
         return
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return
@@ -249,6 +261,13 @@ export default function BattleMap() {
           if (ep) togglePhaseHidden(ep, 'drawings', selDrawing)
           else removeDrawing(selDrawing)
           setSelDrawing(null)
+        }
+        return
+      }
+      if (k === '[' || k === ']') {
+        if (selDrawing) {
+          e.preventDefault()
+          moveDrawing(selDrawing, k === '[' ? -1 : 1)
         }
         return
       }
@@ -688,7 +707,12 @@ export default function BattleMap() {
         )}
 
         {pb.open && (
-          <PhasesBar onExportVideo={exportAnimation} recording={recording} />
+          <PhasesBar
+            onExportVideo={exportAnimation}
+            recording={recording}
+            showTrail={showTrail}
+            onToggleTrail={toggleShowTrail}
+          />
         )}
       </div>
     </div>

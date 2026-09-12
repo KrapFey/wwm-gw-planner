@@ -19,6 +19,18 @@ const seedFixtures = () => DEFAULT_FIXTURES.map((f) => ({ ...f }))
 
 const STORAGE_KEY = 'wwm-gw-planner'
 
+// Tiny pub/sub so the UI can show a "saved" pulse when a debounced write
+// actually lands, without coupling storage to the store's own state (writing
+// a "just saved" flag into persisted state would just schedule another write).
+const saveListeners = new Set()
+export const subscribeSaved = (fn) => {
+  saveListeners.add(fn)
+  return () => saveListeners.delete(fn)
+}
+const notifySaved = () => {
+  for (const fn of saveListeners) fn()
+}
+
 // Coalesce rapid writes (dragging tokens, typing a name, scrubbing) into one
 // localStorage.setItem — the whole doc library is re-serialised on every write.
 // Flushed on hide/unload so nothing is lost.
@@ -31,6 +43,7 @@ function debouncedStorage(base, ms = 400) {
     if (pending) {
       base.setItem(pending[0], pending[1])
       pending = null
+      notifySaved()
     }
   }
   if (typeof window !== 'undefined') {
@@ -200,12 +213,15 @@ const creator = (set, get) => ({
   ui: {
     panels: { ally: true, enemy: true },
     collapsedTeams: {},
-    collapsedPills: {}
+    collapsedPills: {},
+    showTrail: true
   },
   togglePanel: (side) =>
     set((s) => ({
       ui: { ...s.ui, panels: { ...s.ui.panels, [side]: !s.ui.panels[side] } }
     })),
+  toggleShowTrail: () =>
+    set((s) => ({ ui: { ...s.ui, showTrail: !s.ui.showTrail } })),
   toggleTeam: (id) =>
     set((s) => ({
       ui: {
@@ -424,6 +440,34 @@ const creator = (set, get) => ({
     commit(set, get, (s) => {
       const d = s.drawings.find((x) => x.id === id)
       if (d) Object.assign(d, patch)
+    }),
+  // Copy a drawing, nudged so the duplicate is visible next to its source.
+  // Returns the new id (synchronously, before commit()'s draft is applied) so
+  // the caller can select it right away.
+  duplicateDrawing: (id) => {
+    const src = get().strategy.drawings.find((d) => d.id === id)
+    if (!src) return null
+    const nid = newId('dr')
+    commit(set, get, (s) => {
+      const i = s.drawings.findIndex((d) => d.id === id)
+      if (i === -1) return
+      s.drawings.splice(i + 1, 0, {
+        ...src,
+        id: nid,
+        points: src.points.map((v) => v + 14)
+      })
+    })
+    return nid
+  },
+  // Z-order: dir -1 sends a drawing back one slot, +1 brings it forward one
+  // (drawings render in array order, so "forward" = later in the array).
+  moveDrawing: (id, dir) =>
+    commit(set, get, (s) => {
+      const i = s.drawings.findIndex((d) => d.id === id)
+      const j = i + dir
+      if (i === -1 || j < 0 || j >= s.drawings.length) return
+      const [d] = s.drawings.splice(i, 1)
+      s.drawings.splice(j, 0, d)
     }),
   removeDrawing: (id) =>
     commit(set, get, (s) => {
@@ -691,7 +735,8 @@ export const useStore = create(
         persisted.ui = {
           panels: ui.panels || { ally: true, enemy: true },
           collapsedTeams: ui.collapsedTeams || {},
-          collapsedPills: ui.collapsedPills || {}
+          collapsedPills: ui.collapsedPills || {},
+          showTrail: ui.showTrail ?? true
         }
         return persisted
       },
@@ -704,7 +749,8 @@ export const useStore = create(
         merged.ui = {
           panels: ui.panels || { ally: true, enemy: true },
           collapsedTeams: ui.collapsedTeams || {},
-          collapsedPills: ui.collapsedPills || {}
+          collapsedPills: ui.collapsedPills || {},
+          showTrail: ui.showTrail ?? true
         }
         if (merged.docs?.[merged.activeId]) merged.strategy = merged.docs[merged.activeId]
         return merged

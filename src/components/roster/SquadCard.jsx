@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore.js'
-import { ROLES, LANES, SQUAD_SIZE_PRESETS } from '../../lib/schema.js'
+import { ROLES, LANES, SQUAD_SIZE_PRESETS, TEAM_SWATCHES } from '../../lib/schema.js'
 import { squadStats, squadLabel, squadDefaultName, ROLE_ICON } from '../../lib/selectors.js'
 import { IconCopy } from '../Icons.jsx'
 import PlayerRow from './PlayerRow.jsx'
@@ -17,6 +18,17 @@ export default function SquadCard({ squad }) {
   const pct = Math.min(100, squad.targetSize ? (fill / squad.targetSize) * 100 : 0)
   const label = squadLabel(strategy, squad)
   const defaultName = squadDefaultName(strategy, squad)
+
+  const [colorOpen, setColorOpen] = useState(false)
+  const colorRef = useRef(null)
+  useEffect(() => {
+    if (!colorOpen) return
+    const onDoc = (e) => {
+      if (!colorRef.current?.contains(e.target)) setColorOpen(false)
+    }
+    window.addEventListener('mousedown', onDoc)
+    return () => window.removeEventListener('mousedown', onDoc)
+  }, [colorOpen])
 
   return (
     <div className="squad" style={{ borderLeftColor: squad.color }}>
@@ -134,6 +146,32 @@ export default function SquadCard({ squad }) {
                 {n}
               </button>
             ))}
+
+            <div className="team-color-pick" ref={colorRef}>
+              <button
+                className="tiny ghost"
+                onClick={() => setColorOpen((v) => !v)}
+                title="Team colour"
+              >
+                <span className="mk-dot" style={{ background: squad.color }} /> Colour
+              </button>
+              {colorOpen && (
+                <div className="ctb-drop team-color-pop">
+                  {TEAM_SWATCHES.map((c) => (
+                    <button
+                      key={c}
+                      className={'swatch' + (squad.color === c ? ' on' : '')}
+                      style={{ background: c }}
+                      onClick={() => {
+                        updateSquad(squad.id, { color: c })
+                        setColorOpen(false)
+                      }}
+                      title={c}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </header>

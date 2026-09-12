@@ -48,6 +48,10 @@ export const squadColorForIndex = (i, side = 'ally') => {
   return p[((i % p.length) + p.length) % p.length]
 }
 
+// Flat swatch list for the per-team colour override picker (SquadCard) — both
+// sides' shades, so an override isn't limited to the auto-assigned one.
+export const TEAM_SWATCHES = [...SQUAD_COLORS.ally, ...SQUAD_COLORS.enemy]
+
 // Shared map-pill colour: every Attack pill on a guild looks the same, every
 // Defense pill looks the same — 4 in total. Both of a guild's colours keep its
 // temperature (ours = cool, enemy = warm) but Attack vs Defense are clearly
