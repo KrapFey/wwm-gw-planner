@@ -1273,6 +1273,8 @@ select {
 }
 
 .note {
+  display: flex;
+  flex-direction: column;
   width: 178px;
   color: #1b1810;
   background: #ffe08a;
@@ -1290,6 +1292,7 @@ select {
 }
 .note textarea {
   display: block;
+  flex: 1;
   width: 100%;
   min-height: 58px;
   border: none;
@@ -1299,11 +1302,42 @@ select {
   color: inherit;
   font-size: 12px;
   line-height: 1.4;
-  resize: vertical;
+  resize: none;
 }
 .note textarea:focus {
   outline: none;
   box-shadow: none;
+}
+
+/* corner grip — drag to resize the whole note (width + height together) */
+.ann-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  touch-action: none;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0 38%,
+      rgba(0, 0, 0, 0.4) 38% 46%,
+      transparent 46% 54%,
+      rgba(0, 0, 0, 0.4) 54% 62%,
+      transparent 62%
+    );
+}
+.ann-resize:hover {
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0 38%,
+      rgba(0, 0, 0, 0.65) 38% 46%,
+      transparent 46% 54%,
+      rgba(0, 0, 0, 0.65) 54% 62%,
+      transparent 62%
+    );
 }
 
 .timer {

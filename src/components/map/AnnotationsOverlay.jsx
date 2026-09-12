@@ -41,17 +41,65 @@ function useDrag(item, view, commitPos) {
   return { pos: live ?? item, onPointerDown }
 }
 
+const NOTE_W_DEFAULT = 178
+const NOTE_MIN_W = 130
+// keep in step with .ann-bar's height + textarea's min-height in the CSS so
+// the drag floor and the CSS floor agree
+const NOTE_MIN_H = 92
+
+// Drag the corner grip to resize a note. Size is in screen px (notes keep a
+// constant on-screen size regardless of map zoom), so no zoom scaling needed.
+function useResize(note, commitSize) {
+  const [live, setLive] = useState(null)
+  const start = useRef(null)
+
+  const onPointerDown = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    start.current = {
+      cx: e.clientX,
+      cy: e.clientY,
+      w: note.width ?? NOTE_W_DEFAULT,
+      h: note.height ?? e.currentTarget.closest('.note')?.offsetHeight ?? 90
+    }
+    const onMove = (ev) => {
+      const s = start.current
+      if (!s) return
+      setLive({
+        width: Math.max(NOTE_MIN_W, s.w + (ev.clientX - s.cx)),
+        height: Math.max(NOTE_MIN_H, s.h + (ev.clientY - s.cy))
+      })
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      start.current = null
+      setLive((cur) => {
+        if (cur) commitSize({ width: Math.round(cur.width), height: Math.round(cur.height) })
+        return null
+      })
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  return { size: live, onPointerDown }
+}
+
 function NoteCard({ note, view }) {
   const updateNote = useStore((s) => s.updateNote)
   const removeNote = useStore((s) => s.removeNote)
   const { pos, onPointerDown } = useDrag(note, view, (p) => updateNote(note.id, p))
+  const { size, onPointerDown: onResizeDown } = useResize(note, (s) => updateNote(note.id, s))
   const [text, setText] = useState(note.text)
   useEffect(() => setText(note.text), [note.text])
 
   const { left, top } = toScreen(pos, view)
+  const width = size?.width ?? note.width ?? NOTE_W_DEFAULT
+  const height = size?.height ?? note.height
 
   return (
-    <div className="ann note" style={{ left, top, background: note.color }}>
+    <div className="ann note" style={{ left, top, width, height, background: note.color }}>
       <div className="ann-bar" onPointerDown={onPointerDown}>
         <span className="ann-grip">⠿</span>
         <span className="note-colors">
@@ -75,6 +123,7 @@ function NoteCard({ note, view }) {
         onChange={(e) => setText(e.target.value)}
         onBlur={() => text !== note.text && updateNote(note.id, { text })}
       />
+      <div className="ann-resize" onPointerDown={onResizeDown} title="Drag to resize" />
     </div>
   )
 }
