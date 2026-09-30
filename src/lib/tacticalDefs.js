@@ -53,7 +53,7 @@ export const withAlpha = (hex, a) => {
 
 // Default bow for a *legacy* 4-number curved arrow (no stored apex). `points` =
 // [x1, y1, x2, y2].
-export function curvedArrowControl([x1, y1, x2, y2]) {
+function curvedArrowControl([x1, y1, x2, y2]) {
   const dx = x2 - x1
   const dy = y2 - y1
   const len = Math.hypot(dx, dy) || 1

@@ -266,7 +266,7 @@ select {
   background: var(--surface-1);
 }
 
-.topbar .spacer {
+.spacer {
   flex: 1;
 }
 .topbar .group {
@@ -1068,14 +1068,16 @@ select {
   background: transparent;
 }
 
-.ctb-draw .swatch {
+.ctb-draw .swatch,
+.team-color-pop .swatch {
   width: 18px;
   height: 18px;
   padding: 0;
   border-radius: 50%;
   border: 2px solid var(--border-2);
 }
-.ctb-draw .swatch.on {
+.ctb-draw .swatch.on,
+.team-color-pop .swatch.on {
   border-color: var(--text);
   box-shadow: 0 0 0 2px var(--surface-2), 0 0 0 4px var(--accent);
 }
@@ -1094,17 +1096,6 @@ select {
   gap: 5px;
   min-width: 0;
   width: max-content;
-}
-.team-color-pop .swatch {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid var(--border-2);
-}
-.team-color-pop .swatch.on {
-  border-color: var(--text);
-  box-shadow: 0 0 0 2px var(--surface-2), 0 0 0 4px var(--accent);
 }
 
 /* keyboard shortcuts cheatsheet */
@@ -1509,18 +1500,11 @@ select {
 
 @media (max-width: 720px) {
   .topbar {
-    flex-wrap: wrap;
     gap: 8px 10px;
-  }
-  .topbar .hint {
-    display: none;
   }
   .topbar .strategy-name {
     min-width: 120px;
     flex: 1;
-  }
-  .topbar .spacer {
-    display: none;
   }
   .roster {
     width: 88vw;

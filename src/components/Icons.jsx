@@ -37,9 +37,6 @@ export const IconMinus = () => (<S><path d="M5 12h14" /></S>)
 export const IconFit = () => (
   <S><path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" /></S>
 )
-export const IconPanel = () => (
-  <S><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></S>
-)
 export const IconLayers = () => (
   <S><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 14l9 5 9-5" /></S>
 )
@@ -59,7 +56,6 @@ export const IconTrail = () => (
   <S><circle cx="5" cy="18" r="2" fill="currentColor" stroke="none" /><path d="M8 15l3-3M14 9l3-3" strokeDasharray="3 3" /><circle cx="19" cy="5" r="1.5" fill="currentColor" stroke="none" /></S>
 )
 export const IconX = () => (<S><path d="M6 6l12 12M18 6 6 18" /></S>)
-export const IconCheck = () => (<S><path d="M5 12l5 5 9-11" /></S>)
 export const IconTimeline = () => (
   <S>
     <path d="M4 7h16M4 12h16M4 17h16" />

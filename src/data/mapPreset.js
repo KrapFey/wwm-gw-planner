@@ -4,8 +4,6 @@
 // x/y are map-image pixels and reference each fixture's CENTRE.
 // Each side's three bulwarks share one x so they line up vertically.
 
-export const MAP_PRESET_VERSION = 2
-
 const BLUE_BULWARK_X = 557
 const RED_BULWARK_X = 904
 

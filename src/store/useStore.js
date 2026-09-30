@@ -614,13 +614,7 @@ const creator = (set, get) => ({
     }),
 
   movePhase: (id, dir) =>
-    commit(set, get, (s) => {
-      const i = s.phases.findIndex((p) => p.id === id)
-      const j = i + dir
-      if (i === -1 || j < 0 || j >= s.phases.length) return
-      const [p] = s.phases.splice(i, 1)
-      s.phases.splice(j, 0, p)
-    }),
+    get().movePhaseTo(id, get().strategy.phases.findIndex((p) => p.id === id) + dir),
 
   // Drop a phase at an arbitrary index (chip drag-reorder).
   movePhaseTo: (id, index) =>

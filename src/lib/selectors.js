@@ -23,7 +23,7 @@ export function squadLabel(strategy, squad) {
   return custom || squadDefaultName(strategy, squad)
 }
 
-export function squadPlayers(strategy, squadId) {
+function squadPlayers(strategy, squadId) {
   return strategy.players.filter((p) => p.squadId === squadId)
 }
 

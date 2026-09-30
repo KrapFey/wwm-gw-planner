@@ -3,7 +3,7 @@
 // A "strategy" is the whole planning document. It is what gets autosaved to
 // localStorage and what export/import reads and writes.
 
-export const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 1
 
 export const ROLES = ['Tank', 'DPS', 'Healer']
 
@@ -24,7 +24,7 @@ export const normalizeCategory = (c, hintName = '') =>
       ? 'defence'
       : 'attack'
 
-export const SIDE_IDS = ['ally', 'enemy']
+const SIDE_IDS = ['ally', 'enemy']
 
 export const SIDE_META = {
   ally: { label: 'Our Guild', color: '#3b82f6' },
@@ -101,7 +101,7 @@ const pointDict = (d) => {
   return out
 }
 const EASINGS = ['inout', 'linear', 'in', 'out']
-export function normalizePhase(p, i) {
+function normalizePhase(p, i) {
   return {
     id: p?.id || `ph_${i}`,
     name: typeof p?.name === 'string' && p.name ? p.name : `Phase ${i + 1}`,

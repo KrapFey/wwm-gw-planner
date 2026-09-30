@@ -5,9 +5,9 @@
 //   board.squads  = { [squadId]:  { x, y } }
 //   board.markers = { [markerId]: { x, y } }
 
-export const lerp = (a, b, t) => a + (b - a) * t
+const lerp = (a, b, t) => a + (b - a) * t
 
-export const easeInOutCubic = (x) =>
+const easeInOutCubic = (x) =>
   x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
 
 const EASING = {

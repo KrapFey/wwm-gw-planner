@@ -17,10 +17,8 @@ export function videoRecordingSupported() {
 }
 
 // `runAnimation(): Promise<void>` should drive the board for the clip's length.
+// Callers check videoRecordingSupported() first.
 export async function recordBoardVideo(stage, runAnimation, { fps = 24, bitrate = 6_000_000 } = {}) {
-  if (!videoRecordingSupported()) {
-    throw new Error('Video recording isn’t supported in this browser')
-  }
   const mimeType = MIME_CANDIDATES.find((m) => MediaRecorder.isTypeSupported(m))
 
   const snap = stage.toCanvas()

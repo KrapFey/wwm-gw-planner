@@ -1,6 +1,4 @@
-import { customAlphabet } from 'nanoid'
-
-// Short, URL-safe, human-glanceable ids for players / squads / markers.
-const nano = customAlphabet('123456789abcdefghijkmnopqrstuvwxyz', 10)
-
-export const newId = (prefix) => `${prefix}_${nano()}`
+// Short, URL-safe ids for players / squads / markers. getRandomValues (not
+// randomUUID) so it also works over plain-http LAN dev (insecure context).
+export const newId = (prefix) =>
+  `${prefix}_${Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => (b % 36).toString(36)).join('')}`

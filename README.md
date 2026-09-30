@@ -11,7 +11,7 @@ somewhere (e.g. Oracle Cloud). Strategies are shared by exporting/importing a JS
 - Zustand (+ `zundo` for undo/redo), autosaved to `localStorage`
 - `vite-plugin-pwa` for offline install
 - Konva / react-konva for the battle map
-- ESLint (flat config) + Vitest; GitHub Actions CI + push-to-deploy (`.github/workflows/`)
+- ESLint (flat config) + Vitest; GitHub Actions CI (`.github/workflows/ci.yml`)
 
 ## Develop
 
@@ -43,9 +43,9 @@ If `esbuild` fails to run its postinstall in a locked-down npm, run once:
 ## Deploy
 
 Static build — `npm run build` produces `dist/`, host it anywhere. Live setup is an
-Oracle Cloud VM behind Caddy (auto-HTTPS via `sslip.io`); pushing to `main` builds
-and rsyncs `dist/` to the VM (`.github/workflows/deploy.yml`). Full runbook +
-`deploy/Caddyfile` + manual fallback in [`deploy/README.md`](deploy/README.md).
+Oracle Cloud VM behind Caddy (auto-HTTPS via `sslip.io`); `deploy/deploy.sh` on the
+VM pulls `main`, builds and rsyncs `dist/`. Full runbook + `deploy/Caddyfile` in
+[`deploy/README.md`](deploy/README.md).
 
 ## Planning-phase animation
 
