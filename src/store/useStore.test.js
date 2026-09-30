@@ -374,3 +374,41 @@ describe('planning phases', () => {
     expect(phase(0).hidden).not.toContain(m)
   })
 })
+
+describe('edits + undo history', () => {
+  const past = () => useStore.temporal.getState().pastStates.length
+
+  it('an edit that changes nothing writes nothing and adds no undo step', () => {
+    const before = S().strategy
+    S().updateItem('missing', { x: 1 })
+    S().moveItem('missing', 1)
+    expect(S().strategy).toBe(before)
+    expect(past()).toBe(0)
+  })
+
+  it('unchanged items keep their identity (structural sharing)', () => {
+    const a = S().addItem({ type: 'marker', kind: 'attack', x: 0, y: 0 })
+    const b = S().addItem({ type: 'marker', kind: 'hold', x: 5, y: 5 })
+    const itemB = S().strategy.items.find((i) => i.id === b)
+    S().updateItem(a, { label: 'go' })
+    expect(S().strategy.items.find((i) => i.id === b)).toBe(itemB)
+  })
+
+  it('a burst of edits (typing) is one undo step; a pause starts a new one', () => {
+    vi.useFakeTimers()
+    try {
+      const original = S().strategy.meta.name
+      for (const n of ['V', 'Va', 'Van', 'Vang']) S().setStrategyName(n)
+      expect(past()).toBe(1)
+      vi.advanceTimersByTime(700)
+      S().setStrategyName('Vanguard')
+      expect(past()).toBe(2)
+      useStore.temporal.getState().undo()
+      expect(S().strategy.meta.name).toBe('Vang')
+      useStore.temporal.getState().undo()
+      expect(S().strategy.meta.name).toBe(original)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

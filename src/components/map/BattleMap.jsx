@@ -298,11 +298,12 @@ export default function BattleMap() {
             onPointerDown={onPointerDown}
             onPointerMove={draw.move}
           >
-            <Layer listening={false}>
-              <MapImage />
-            </Layer>
-
+            {/* 3 layers (Konva recommends <= 5): base map + fixtures, drawings,
+                and the pieces (trail, pills, markers, notes / timers) */}
             <Layer>
+              <Group listening={false}>
+                <MapImage />
+              </Group>
               {fixtures.map((f) => (
                 <FixtureSprite
                   key={f.id}
@@ -327,59 +328,59 @@ export default function BattleMap() {
               {draw.draft && <DrawingShape drawing={{ ...draw.draft, id: 'draft' }} live />}
             </Layer>
 
-            {trailFrom && (
-              <Layer listening={false}>
-                {byType.pill.filter(shown).map((p) => {
-                  const cur = frame.pos[p.id]
-                  const from = trailFrom[p.id]
-                  const color = squadById[p.id]?.color
-                  if (!cur || !from || Math.hypot(cur.x - from.x, cur.y - from.y) < 4) return null
-                  return (
-                    <Group key={p.id}>
-                      <KLine
-                        points={[from.x, from.y, cur.x, cur.y]}
-                        stroke={color}
-                        strokeWidth={4}
-                        opacity={0.9}
-                        lineCap="round"
-                        dash={[10, 7]}
-                        shadowColor={color}
-                        shadowBlur={6}
-                        shadowOpacity={0.5}
-                      />
-                      <Circle
-                        x={from.x}
-                        y={from.y}
-                        radius={11}
-                        fill={color}
-                        opacity={0.45}
-                        stroke="#0c0e12"
-                        strokeWidth={1.5}
-                      />
-                    </Group>
-                  )
-                })}
-              </Layer>
-            )}
-
-            <Layer listening={interactive} opacity={editLayout ? 0.35 : 1}>
-              {byType.pill.filter(shown).map((p) =>
-                squadById[p.id] ? (
-                  <SquadToken
-                    key={p.id}
-                    squad={squadById[p.id]}
-                    {...at(p)}
-                    selected={interactive && p.id === sel}
-                    onSelect={select}
-                    locked={pb.playing}
-                  />
-                ) : null
-              )}
-            </Layer>
-
-            {/* markers sit above team pills so a fresh/moved marker is never
-                hidden under one; notes + timers above everything */}
             <Layer listening={interactive}>
+              {trailFrom && (
+                <Group listening={false}>
+                  {byType.pill.filter(shown).map((p) => {
+                    const cur = frame.pos[p.id]
+                    const from = trailFrom[p.id]
+                    const color = squadById[p.id]?.color
+                    if (!cur || !from || Math.hypot(cur.x - from.x, cur.y - from.y) < 4) return null
+                    return (
+                      <Group key={p.id}>
+                        <KLine
+                          points={[from.x, from.y, cur.x, cur.y]}
+                          stroke={color}
+                          strokeWidth={4}
+                          opacity={0.9}
+                          lineCap="round"
+                          dash={[10, 7]}
+                          shadowColor={color}
+                          shadowBlur={6}
+                          shadowOpacity={0.5}
+                        />
+                        <Circle
+                          x={from.x}
+                          y={from.y}
+                          radius={11}
+                          fill={color}
+                          opacity={0.45}
+                          stroke="#0c0e12"
+                          strokeWidth={1.5}
+                        />
+                      </Group>
+                    )
+                  })}
+                </Group>
+              )}
+
+              <Group opacity={editLayout ? 0.35 : 1}>
+                {byType.pill.filter(shown).map((p) =>
+                  squadById[p.id] ? (
+                    <SquadToken
+                      key={p.id}
+                      squad={squadById[p.id]}
+                      {...at(p)}
+                      selected={interactive && p.id === sel}
+                      onSelect={select}
+                      locked={pb.playing}
+                    />
+                  ) : null
+                )}
+              </Group>
+
+              {/* markers sit above team pills so a fresh/moved marker is never
+                  hidden under one; notes + timers above everything */}
               {byType.marker.filter(shown).map((m) => (
                 <Marker
                   key={m.id}
@@ -390,24 +391,24 @@ export default function BattleMap() {
                   locked={pb.playing}
                 />
               ))}
-            </Layer>
 
-            {!editLayout && (
-              <Layer listening={interactive}>
-                {byType.note.filter(shown).map((n) => (
-                  <NoteItem
-                    {...cardProps(n)}
-                    key={n.id}
-                    note={n}
-                    editing={n.id === editId}
-                    onEdit={setEditId}
-                  />
-                ))}
-                {byType.timer.filter(shown).map((t) => (
-                  <TimerItem {...cardProps(t)} key={t.id} timer={t} />
-                ))}
-              </Layer>
-            )}
+              {!editLayout && (
+                <>
+                  {byType.note.filter(shown).map((n) => (
+                    <NoteItem
+                      {...cardProps(n)}
+                      key={n.id}
+                      note={n}
+                      editing={n.id === editId}
+                      onEdit={setEditId}
+                    />
+                  ))}
+                  {byType.timer.filter(shown).map((t) => (
+                    <TimerItem {...cardProps(t)} key={t.id} timer={t} />
+                  ))}
+                </>
+              )}
+            </Layer>
           </Stage>
         )}
 

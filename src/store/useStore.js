@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { temporal } from 'zundo'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { useStore as useZustandStore } from 'zustand'
+import { produce } from 'immer'
 
 import {
   emptyStrategy,
@@ -113,14 +114,30 @@ const resetPlayback = () => {
   }
 }
 
-// Apply an immutable update to the active strategy; stamp updatedAt and mirror
-// it into the library (`docs`).
+// Apply an update to the active strategy (Immer: mutate the draft, unchanged
+// parts keep their identity); stamp updatedAt and mirror it into the library
+// (`docs`). An update that changes nothing writes nothing and adds no undo step.
 function commit(set, get, producer) {
   const st = get()
-  const draft = structuredClone(st.strategy)
-  const next = producer(draft) ?? draft
-  next.meta = { ...next.meta, updatedAt: new Date().toISOString() }
+  const changed = produce(st.strategy, (d) => void producer(d))
+  if (changed === st.strategy) return
+  const next = produce(changed, (d) => {
+    d.meta.updatedAt = new Date().toISOString()
+  })
   set({ strategy: next, docs: { ...st.docs, [st.activeId]: next } })
+}
+
+// Undo history records the state before a burst of edits; edits that follow
+// within UNDO_GROUP_MS of each other (typing a name, dragging a slider,
+// nudging a number) join that step instead of adding one each.
+const UNDO_GROUP_MS = 600
+const groupBursts = (handleSet) => {
+  let timer = null
+  return (...args) => {
+    if (!timer) handleSet(...args)
+    clearTimeout(timer)
+    timer = setTimeout(() => (timer = null), UNDO_GROUP_MS)
+  }
 }
 
 const BOOT_ID = newId('str')
@@ -591,6 +608,7 @@ export const useStore = create(
       // edits never create history entries.
       partialize: (state) => ({ strategy: state.strategy }),
       equality: (a, b) => a.strategy === b.strategy,
+      handleSet: groupBursts,
       limit: 100
     }),
     {
