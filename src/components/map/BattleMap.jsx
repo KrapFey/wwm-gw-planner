@@ -1,16 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Stage, Layer, Group, Circle, Line as KLine } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { MAP_W, MAP_H, clampToMap } from '../../lib/mapLayout.js'
-import {
-  DRAW_COLORS,
-  DRAW_WIDTHS,
-  SHAPE_TOOLS,
-  BOX_DRAW_TOOLS,
-  drawingPolyline,
-  reduceCurvedArrow
-} from '../../lib/tacticalDefs.js'
+import { DRAW_COLORS, DRAW_WIDTHS, SHAPE_TOOLS, drawingPolyline } from '../../lib/tacticalDefs.js'
 import MapImage from './MapImage.jsx'
 import FixtureSprite from './FixtureSprite.jsx'
 import SquadToken from './SquadToken.jsx'
@@ -20,30 +13,25 @@ import DrawingShape from './DrawingShape.jsx'
 import AnnotationsOverlay from './AnnotationsOverlay.jsx'
 import LayoutEditorPanel from './LayoutEditorPanel.jsx'
 import PhasesBar from './PhasesBar.jsx'
-import CanvasToolbar from './CanvasToolbar.jsx'
+import CanvasToolbar, { TOOL_KEYS } from './CanvasToolbar.jsx'
+import { useCamera } from './useCamera.js'
+import { useDrawTool } from './useDrawTool.js'
 import { startFrame, frameAt, totalDuration, phaseArrivalTime } from '../../lib/playback.js'
-import { downloadBoardImage, downloadAnimation } from '../../lib/strategyFile.js'
-import { recordBoardVideo, videoRecordingSupported } from '../../lib/recordBoard.js'
+import { downloadBoardImage } from '../../lib/strategyFile.js'
 
-const MIN_ZOOM = 0.1
-const MAX_ZOOM = 4
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+const PB_CLOSED = { open: false, playing: false, phaseId: null, t: 0 }
 
 export default function BattleMap() {
   const wrapRef = useRef(null)
   const stageRef = useRef(null)
-  const inited = useRef(false)
-  const draftRef = useRef(null)
-  const erasingRef = useRef(false)
-  const [size, setSize] = useState({ w: 0, h: 0 })
+  const cam = useCamera(wrapRef, stageRef)
   const [editLayout, setEditLayout] = useState(false)
   const [selectedFixture, setSelectedFixture] = useState(null)
 
-  // tool: 'select' | 'pen' | 'arrow' | 'erase' | 'rect' | 'ellipse' | 'triangle' | 'line'
+  // tool: 'select' | 'erase' | a drawing tool (pen / arrow / carrow / shapes)
   const [tool, setToolRaw] = useState('select')
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0])
   const [drawWidth, setDrawWidth] = useState(DRAW_WIDTHS[1].value)
-  const [draft, setDraft] = useState(null)
   const [markerPalette, setMarkerPalette] = useState(false)
   const [shapePalette, setShapePalette] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -51,25 +39,31 @@ export default function BattleMap() {
   const [selMarker, setSelMarker] = useState(null)
   const [selDrawing, setSelDrawing] = useState(null)
   const [toolbarSlot, setToolbarSlot] = useState(null)
-  const [recording, setRecording] = useState(false)
+  const draw = useDrawTool({
+    tool,
+    color: drawColor,
+    width: drawWidth,
+    stageRef,
+    pointerMap: cam.pointerMap
+  })
 
   // the canvas toolbar renders up in the top bar
   useEffect(() => {
     setToolbarSlot(document.getElementById('canvas-toolbar-slot'))
   }, [])
 
-  const isShapeTool = SHAPE_TOOLS.includes(tool)
-
+  const clearSelection = () => {
+    setSelMarker(null)
+    setSelDrawing(null)
+  }
   const setTool = (t) => {
     setToolRaw(t)
     if (t !== 'select') {
       setMarkerPalette(false)
       setShapePalette(false)
-      setSelMarker(null)
-      setSelDrawing(null)
+      clearSelection()
     }
   }
-
   const selectMarker = useCallback((id) => {
     setSelMarker(id)
     setSelDrawing(null)
@@ -87,33 +81,13 @@ export default function BattleMap() {
   const stratName = useStore((s) => s.strategy.meta.name)
   const view = useStore((s) => s.view)
   const pb = useStore((s) => s.playback)
-  const setView = useStore((s) => s.setView)
-  const setPlayback = useStore((s) => s.setPlayback)
-  const selectPhase = useStore((s) => s.selectPhase)
-  const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
   const showTrail = useStore((s) => s.ui.showTrail)
-  const toggleShowTrail = useStore((s) => s.toggleShowTrail)
-  const setSquadToken = useStore((s) => s.setSquadToken)
-  const clearTokens = useStore((s) => s.clearTokens)
-  const addMarker = useStore((s) => s.addMarker)
-  const removeMarker = useStore((s) => s.removeMarker)
-  const clearMarkers = useStore((s) => s.clearMarkers)
-  const addDrawing = useStore((s) => s.addDrawing)
-  const removeDrawing = useStore((s) => s.removeDrawing)
-  const duplicateDrawing = useStore((s) => s.duplicateDrawing)
-  const moveDrawing = useStore((s) => s.moveDrawing)
-  const clearDrawings = useStore((s) => s.clearDrawings)
-  const addNote = useStore((s) => s.addNote)
-  const addTimer = useStore((s) => s.addTimer)
+  const act = useStore.getState // store actions are stable; read at call time
 
   const placedSquads = useMemo(
-    () =>
-      squads
-        .filter((q) => q.token)
-        .sort((a, b) => (a.token.at || 0) - (b.token.at || 0)),
+    () => squads.filter((q) => q.token).sort((a, b) => (a.token.at || 0) - (b.token.at || 0)),
     [squads]
   )
-  const boardCount = placedSquads.length
   const interactive = tool === 'select' && !editLayout && !pb.playing
 
   // Resolve each phase's assigned drawn paths into polylines the pills follow.
@@ -133,7 +107,7 @@ export default function BattleMap() {
   }, [pb.open, phases, drawings])
 
   // Phase-animation frame: the interpolated board while the phase editor is
-  // open (null otherwise). Also gates which board a drag writes to.
+  // open (null otherwise).
   const sf = useMemo(
     () => (pb.open && phases.length ? startFrame(placedSquads, markers) : null),
     [pb.open, phases, placedSquads, markers]
@@ -151,95 +125,52 @@ export default function BattleMap() {
       ? frameAt(sf, phases, phaseArrivalTime(phases, frame.phaseIndex - 1), pathPolys).squads
       : sf.squads
   }, [scrubbing, showTrail, sf, phases, pathPolys, frame?.phaseIndex])
-  // the phase whose board a pill/marker drag writes to (null = live board);
-  // SquadToken / Marker take this and do the store call themselves so they
-  // memoize cleanly
+  // the phase whose board a pill/marker drag writes to (null = live board)
   const editingPhase = pb.open && pb.phaseId ? pb.phaseId : null
 
-  useLayoutEffect(() => {
-    const el = wrapRef.current
-    if (!el) return
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect
-      setSize({ w: Math.round(width), h: Math.round(height) })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  function fit(next = size) {
-    if (next.w < 2 || next.h < 2) return
-    const scale = Math.min(next.w / MAP_W, next.h / MAP_H) * 0.96
-    setView({
-      zoom: scale,
-      x: (next.w - MAP_W * scale) / 2,
-      y: (next.h - MAP_H * scale) / 2
-    })
-  }
-
-  useEffect(() => {
-    if (!inited.current && size.w > 2 && size.h > 2) {
-      inited.current = true
-      fit(size)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size])
-
-  // Keyboard: tool shortcuts + delete selected + escape.
+  // Keyboard: tool shortcuts, selection actions, phase transport.
   useEffect(() => {
     const onKey = (e) => {
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-        e.preventDefault()
-        zoomTo(1)
-        return
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
-        if (selDrawing) {
-          e.preventDefault()
-          const nid = duplicateDrawing(selDrawing)
-          if (nid) selectDrawing(nid)
-        }
-        return
-      }
-      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const mod = e.ctrlKey || e.metaKey
       const k = e.key.toLowerCase()
+      const s = useStore.getState()
+      if (mod && k === '0') {
+        e.preventDefault()
+        return cam.zoomTo(1)
+      }
+      if (mod && k === 'd') {
+        if (!selDrawing) return
+        e.preventDefault()
+        const nid = s.duplicateDrawing(selDrawing)
+        return nid && selectDrawing(nid)
+      }
+      if (mod || e.altKey) return
 
-      // phase-editor transport
-      const pbNow = useStore.getState().playback
-      if (pbNow.open) {
-        const phs = useStore.getState().strategy.phases
-        const idx = phs.findIndex((p) => p.id === pbNow.phaseId)
-        if (k === ' ' || k === 'spacebar') {
+      if (s.playback.open) {
+        const phs = s.strategy.phases
+        const idx = phs.findIndex((p) => p.id === s.playback.phaseId)
+        const transport = {
+          ' ': () =>
+            s.setPlayback(
+              s.playback.playing
+                ? { playing: false }
+                : { playing: true, t: s.playback.t >= totalDuration(phs) ? 0 : s.playback.t }
+            ),
+          arrowright: () =>
+            s.selectPhase(phs[idx < 0 ? 0 : Math.min(phs.length - 1, idx + 1)]?.id ?? null),
+          arrowleft: () => s.selectPhase(idx <= 0 ? null : phs[idx - 1].id),
+          home: () => s.selectPhase(null)
+        }[k]
+        if (transport) {
           e.preventDefault()
-          setPlayback(
-            pbNow.playing
-              ? { playing: false }
-              : { playing: true, t: pbNow.t >= totalDuration(phs) ? 0 : pbNow.t }
-          )
-          return
-        }
-        if (k === 'arrowright') {
-          e.preventDefault()
-          selectPhase(phs[idx < 0 ? 0 : Math.min(phs.length - 1, idx + 1)]?.id ?? null)
-          return
-        }
-        if (k === 'arrowleft') {
-          e.preventDefault()
-          selectPhase(idx <= 0 ? null : phs[idx - 1].id)
-          return
-        }
-        if (k === 'home') {
-          e.preventDefault()
-          selectPhase(null)
-          return
+          return transport()
         }
       }
       if (k === 'escape') {
         setTool('select')
-        setSelMarker(null)
-        setSelDrawing(null)
+        clearSelection()
         setMarkerPalette(false)
         setShapePalette(false)
         setShortcutsOpen(false)
@@ -249,262 +180,66 @@ export default function BattleMap() {
       if (k === 'delete' || k === 'backspace') {
         // Editing a phase -> Delete hides from *this* phase (non-destructive);
         // otherwise it removes the entity from the whole document.
-        const p = useStore.getState().playback
-        const ep = p.open && p.phaseId ? p.phaseId : null
+        const ep = s.playback.open && s.playback.phaseId
         if (selMarker) {
           e.preventDefault()
-          if (ep) togglePhaseHidden(ep, 'markers', selMarker)
-          else removeMarker(selMarker)
-          setSelMarker(null)
+          if (ep) s.togglePhaseHidden(ep, 'markers', selMarker)
+          else s.removeMarker(selMarker)
         } else if (selDrawing) {
           e.preventDefault()
-          if (ep) togglePhaseHidden(ep, 'drawings', selDrawing)
-          else removeDrawing(selDrawing)
-          setSelDrawing(null)
+          if (ep) s.togglePhaseHidden(ep, 'drawings', selDrawing)
+          else s.removeDrawing(selDrawing)
         }
-        return
+        return clearSelection()
       }
       if (k === '[' || k === ']') {
-        if (selDrawing) {
-          e.preventDefault()
-          moveDrawing(selDrawing, k === '[' ? -1 : 1)
-        }
-        return
+        if (!selDrawing) return
+        e.preventDefault()
+        return s.moveDrawing(selDrawing, k === '[' ? -1 : 1)
       }
-      if (editLayout) return
-      if (k === 'v') setTool('select')
-      else if (k === 'd') setTool('pen')
-      else if (k === 'a') setTool('arrow')
-      else if (k === 'g') setTool('carrow')
-      else if (k === 'e') setTool('erase')
-      else if (k === 'r') setTool('rect')
-      else if (k === 'c') setTool('ellipse')
-      else if (k === 't') setTool('triangle')
-      else if (k === 'l') setTool('line')
+      if (!editLayout && TOOL_KEYS[k]) setTool(TOOL_KEYS[k][0])
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selMarker, selDrawing, editLayout])
 
-  // Phase playback clock — advances playback.t while playing.
-  useEffect(() => {
-    if (!pb.playing) return
-    const total = totalDuration(phases)
-    let raf
-    let last = performance.now()
-    const tick = (now) => {
-      const st = useStore.getState()
-      if (!st.playback.playing) return
-      const next = st.playback.t + (now - last) * (st.playback.speed || 1)
-      last = now
-      if (next >= total) {
-        if (st.playback.loop) setPlayback({ t: 0 })
-        else return setPlayback({ t: total, playing: false })
-      } else {
-        setPlayback({ t: next })
-      }
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pb.playing, phases])
-
-  function zoomTo(newScale) {
-    const oldScale = view.zoom
-    const s = clamp(newScale, MIN_ZOOM, MAX_ZOOM)
-    const cx = size.w / 2
-    const cy = size.h / 2
-    const mx = (cx - view.x) / oldScale
-    const my = (cy - view.y) / oldScale
-    setView({ zoom: s, x: cx - mx * s, y: cy - my * s })
-  }
-  const zoomBy = (factor) => zoomTo(view.zoom * factor)
-
-  function onWheel(e) {
-    e.evt.preventDefault()
-    const stage = stageRef.current
-    const oldScale = stage.scaleX()
-    const pointer = stage.getPointerPosition()
-    if (!pointer) return
-    const mx = (pointer.x - stage.x()) / oldScale
-    const my = (pointer.y - stage.y()) / oldScale
-    const dir = e.evt.deltaY > 0 ? 1 / 1.09 : 1.09
-    const newScale = clamp(oldScale * dir, MIN_ZOOM, MAX_ZOOM)
-    setView({ zoom: newScale, x: pointer.x - mx * newScale, y: pointer.y - my * newScale })
-  }
-
-  function onStageDragEnd(e) {
-    if (e.target === e.target.getStage()) {
-      setView({ x: e.target.x(), y: e.target.y() })
-    }
-  }
-
-  function pointerLogical() {
-    const stage = stageRef.current
-    const p = stage?.getPointerPosition()
-    if (!p) return null
-    return { x: (p.x - view.x) / view.zoom, y: (p.y - view.y) / view.zoom }
-  }
-
-  function eraseAtPointer() {
-    const stage = stageRef.current
-    const pos = stage?.getPointerPosition()
-    if (!pos) return
-    const hit = stage.getIntersection(pos)
-    if (hit && hit.name() === 'drawing') removeDrawing(hit.id())
-  }
-
   function onPointerDown(e) {
-    if (editLayout) {
-      if (e.target === e.target.getStage()) setSelectedFixture(null)
-      return
-    }
-    if (tool === 'select') {
-      // click on empty canvas clears any selection
-      if (e.target === e.target.getStage()) {
-        setSelMarker(null)
-        setSelDrawing(null)
-      }
-      return
-    }
-    if (tool === 'erase') {
-      erasingRef.current = true
-      eraseAtPointer()
-      window.addEventListener('pointerup', onPointerUp, { once: true })
-      return
-    }
-    const p = pointerLogical()
-    if (!p) return
-    draftRef.current = { tool, color: drawColor, width: drawWidth, points: [p.x, p.y] }
-    setDraft({ ...draftRef.current })
-    // finalise even if the pointer is released outside the stage
-    window.addEventListener('pointerup', onPointerUp, { once: true })
-  }
-
-  function onPointerMove() {
-    if (erasingRef.current) {
-      eraseAtPointer()
-      return
-    }
-    const d = draftRef.current
-    if (!d) return
-    const p = pointerLogical()
-    if (!p) return
-    if (BOX_DRAW_TOOLS.includes(d.tool)) {
-      // arrow + shapes: geometry is just the start + current corner
-      d.points = [d.points[0], d.points[1], p.x, p.y]
-    } else {
-      const lx = d.points[d.points.length - 2]
-      const ly = d.points[d.points.length - 1]
-      if (Math.hypot(p.x - lx, p.y - ly) > 2) d.points.push(p.x, p.y)
-    }
-    setDraft({ ...d, points: [...d.points] })
-  }
-
-  function onPointerUp() {
-    erasingRef.current = false
-    const d = draftRef.current
-    draftRef.current = null
-    if (d) {
-      if (d.tool === 'carrow') {
-        // drawn like the pen (an arc); reduce to start / apex / end
-        const n = d.points.length
-        const span = Math.hypot(d.points[n - 2] - d.points[0], d.points[n - 1] - d.points[1])
-        if (n >= 6 && span > 6) addDrawing({ ...d, points: reduceCurvedArrow(d.points) })
-      } else {
-        const enough = BOX_DRAW_TOOLS.includes(d.tool)
-          ? d.points.length >= 4 &&
-            Math.hypot(d.points[2] - d.points[0], d.points[3] - d.points[1]) > 6
-          : d.points.length >= 6
-        if (enough) addDrawing(d)
-      }
-    }
-    setDraft(null)
-  }
-
-  function clientToLogical(clientX, clientY) {
-    const rect = stageRef.current.container().getBoundingClientRect()
-    return {
-      x: (clientX - rect.left - view.x) / view.zoom,
-      y: (clientY - rect.top - view.y) / view.zoom
-    }
+    const onEmpty = e.target === e.target.getStage()
+    if (editLayout) return onEmpty && setSelectedFixture(null)
+    if (tool === 'select') return onEmpty && clearSelection()
+    draw.begin()
   }
 
   function onDrop(e) {
     e.preventDefault()
     const squadId = e.dataTransfer.getData('application/x-gw-squad')
-    if (squadId) {
-      setSquadToken(squadId, clampToMap(clientToLogical(e.clientX, e.clientY)))
-    }
-  }
-
-  function centerLogical() {
-    return clampToMap({
-      x: (size.w / 2 - view.x) / view.zoom,
-      y: (size.h / 2 - view.y) / view.zoom
-    })
+    if (squadId) act().setSquadToken(squadId, clampToMap(cam.clientToMap(e.clientX, e.clientY)))
   }
 
   function toggleEditLayout() {
     setEditLayout((v) => !v)
     setSelectedFixture(null)
     setTool('select')
-    setDraft(null)
-    draftRef.current = null
-    if (pb.open) setPlayback({ open: false, playing: false, phaseId: null, t: 0 })
+    draw.cancel()
+    if (pb.open) act().setPlayback(PB_CLOSED)
   }
 
   function togglePhases() {
-    if (pb.open) {
-      setPlayback({ open: false, playing: false, phaseId: null, t: 0 })
-    } else {
-      setEditLayout(false)
-      setTool('select')
-      setSelMarker(null)
-      setSelDrawing(null)
-      setPlayback({ open: true, phaseId: null, playing: false, t: 0 })
-    }
+    if (pb.open) return act().setPlayback(PB_CLOSED)
+    setEditLayout(false)
+    setTool('select')
+    clearSelection()
+    act().setPlayback({ ...PB_CLOSED, open: true })
   }
 
-  // Play the phase animation once and record the board to a video file.
-  async function exportAnimation() {
-    const total = totalDuration(phases)
-    if (!total || recording || !stageRef.current) return
-    if (!videoRecordingSupported()) {
-      alert('Video recording isn’t supported in this browser.')
-      return
-    }
-    const restore = { ...useStore.getState().playback }
-    setRecording(true)
-    try {
-      setPlayback({ open: true, phaseId: null, playing: false, t: 0 })
-      await new Promise(requestAnimationFrame)
-      await new Promise(requestAnimationFrame)
-      const blob = await recordBoardVideo(stageRef.current, () =>
-        new Promise((resolve) => {
-          const started = performance.now()
-          setPlayback({ playing: true, t: 0 })
-          const check = () => {
-            if (performance.now() - started >= total + 250) {
-              setPlayback({ playing: false })
-              resolve()
-            } else {
-              requestAnimationFrame(check)
-            }
-          }
-          requestAnimationFrame(check)
-        })
-      )
-      downloadAnimation(blob, stratName)
-    } catch (err) {
-      alert(err.message || 'Recording failed')
-    } finally {
-      setPlayback(restore)
-      setRecording(false)
-    }
-  }
+  const stageClass = editLayout
+    ? ''
+    : tool === 'erase'
+      ? ' erasing'
+      : tool !== 'select'
+        ? ' drawing'
+        : ''
 
   return (
     <div className="map">
@@ -514,7 +249,7 @@ export default function BattleMap() {
             editLayout={editLayout}
             tool={tool}
             setTool={setTool}
-            isShapeTool={isShapeTool}
+            isShapeTool={SHAPE_TOOLS.includes(tool)}
             shapePalette={shapePalette}
             setShapePalette={setShapePalette}
             markerPalette={markerPalette}
@@ -524,7 +259,7 @@ export default function BattleMap() {
             shortcutsOpen={shortcutsOpen}
             setShortcutsOpen={setShortcutsOpen}
             phasesOpen={pb.open}
-            boardCount={boardCount}
+            boardCount={placedSquads.length}
             markerCount={markers.length}
             drawingCount={drawings.length}
             drawColor={drawColor}
@@ -532,18 +267,18 @@ export default function BattleMap() {
             drawWidth={drawWidth}
             setDrawWidth={setDrawWidth}
             zoomPct={Math.round(view.zoom * 100)}
-            addMarker={addMarker}
-            addNote={addNote}
-            addTimer={addTimer}
-            centerLogical={centerLogical}
+            addMarker={act().addMarker}
+            addNote={act().addNote}
+            addTimer={act().addTimer}
+            centerLogical={cam.centerMap}
             togglePhases={togglePhases}
             toggleEditLayout={toggleEditLayout}
-            clearTokens={clearTokens}
-            clearMarkers={clearMarkers}
-            clearDrawings={clearDrawings}
-            zoomBy={zoomBy}
-            zoomTo={zoomTo}
-            fit={fit}
+            clearTokens={act().clearTokens}
+            clearMarkers={act().clearMarkers}
+            clearDrawings={act().clearDrawings}
+            zoomBy={cam.zoomBy}
+            zoomTo={cam.zoomTo}
+            fit={cam.fit}
             onExportPng={() =>
               downloadBoardImage(stageRef.current, stratName, { width: MAP_W, height: MAP_H })
             }
@@ -552,36 +287,25 @@ export default function BattleMap() {
         )}
 
       <div
-        className={
-          'stage-wrap' +
-          (pb.open ? ' phases-open' : '') +
-          (editLayout
-            ? ''
-            : tool === 'erase'
-              ? ' erasing'
-              : tool !== 'select'
-                ? ' drawing'
-                : '')
-        }
+        className={'stage-wrap' + (pb.open ? ' phases-open' : '') + stageClass}
         ref={wrapRef}
         onDrop={onDrop}
         onDragOver={(e) => e.preventDefault()}
       >
-        {size.w > 0 && size.h > 0 && (
+        {cam.size.w > 0 && cam.size.h > 0 && (
           <Stage
             ref={stageRef}
-            width={size.w}
-            height={size.h}
+            width={cam.size.w}
+            height={cam.size.h}
             scaleX={view.zoom}
             scaleY={view.zoom}
             x={view.x}
             y={view.y}
             draggable={tool === 'select' && !pb.playing}
-            onWheel={onWheel}
-            onDragEnd={onStageDragEnd}
+            onWheel={cam.onWheel}
+            onDragEnd={cam.onStageDragEnd}
             onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
+            onPointerMove={draw.move}
           >
             <Layer listening={false}>
               <MapImage />
@@ -611,7 +335,7 @@ export default function BattleMap() {
                   />
                 )
               )}
-              {draft && <DrawingShape drawing={{ ...draft, id: 'draft' }} live />}
+              {draw.draft && <DrawingShape drawing={{ ...draw.draft, id: 'draft' }} live />}
             </Layer>
 
             {trailFrom && (
@@ -650,10 +374,7 @@ export default function BattleMap() {
               </Layer>
             )}
 
-            <Layer
-              listening={interactive}
-              opacity={editLayout ? 0.35 : 1}
-            >
+            <Layer listening={interactive} opacity={editLayout ? 0.35 : 1}>
               {placedSquads.map((q) =>
                 frame?.hiddenSquads?.has(q.id) ? null : (
                   <SquadToken
@@ -687,9 +408,7 @@ export default function BattleMap() {
           </Stage>
         )}
 
-        {!editLayout && (
-          <AnnotationsOverlay view={view} hiddenNotes={frame?.hiddenNotes} />
-        )}
+        {!editLayout && <AnnotationsOverlay view={view} hiddenNotes={frame?.hiddenNotes} />}
 
         {!editLayout && selMarker && markers.some((m) => m.id === selMarker) && (
           <MarkerInspector
@@ -706,14 +425,7 @@ export default function BattleMap() {
           />
         )}
 
-        {pb.open && (
-          <PhasesBar
-            onExportVideo={exportAnimation}
-            recording={recording}
-            showTrail={showTrail}
-            onToggleTrail={toggleShowTrail}
-          />
-        )}
+        {pb.open && <PhasesBar stageRef={stageRef} />}
       </div>
     </div>
   )

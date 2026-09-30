@@ -37,17 +37,22 @@ const SHAPE_ICON = {
   line: IconLine
 }
 
-// Display list only — the keys are wired in BattleMap's keydown handler.
+// Single-key tool shortcuts: BattleMap's keydown handler and the cheat-sheet
+// below both read this, so they can't drift apart.
+export const TOOL_KEYS = {
+  v: ['select', 'Select / pan'],
+  d: ['pen', 'Freehand draw'],
+  a: ['arrow', 'Arrow'],
+  g: ['carrow', 'Curved arrow'],
+  r: ['rect', 'Rectangle'],
+  c: ['ellipse', 'Ellipse'],
+  t: ['triangle', 'Triangle'],
+  l: ['line', 'Line'],
+  e: ['erase', 'Eraser']
+}
+
 const SHORTCUTS = [
-  ['V', 'Select / pan'],
-  ['D', 'Freehand draw'],
-  ['A', 'Arrow'],
-  ['G', 'Curved arrow'],
-  ['R', 'Rectangle'],
-  ['C', 'Ellipse'],
-  ['T', 'Triangle'],
-  ['L', 'Line'],
-  ['E', 'Eraser'],
+  ...Object.entries(TOOL_KEYS).map(([k, [, label]]) => [k.toUpperCase(), label]),
   ['Del', 'Delete selection'],
   ['Ctrl D', 'Duplicate selected drawing'],
   ['[ / ]', 'Drawing back / forward'],

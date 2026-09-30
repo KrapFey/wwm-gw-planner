@@ -8,6 +8,8 @@ import {
 } from '../../lib/playback.js'
 import { MARKER_KINDS, DRAW_TOOL_LABEL, PATH_TOOLS } from '../../lib/tacticalDefs.js'
 import { squadLabel } from '../../lib/selectors.js'
+import { downloadAnimation } from '../../lib/strategyFile.js'
+import { recordBoardVideo, videoRecordingSupported } from '../../lib/recordBoard.js'
 import {
   IconPlay,
   IconPause,
@@ -20,13 +22,73 @@ import {
 
 const secs = (ms) => (ms / 1000).toFixed(1)
 
-export default function PhasesBar({
-  onExportVideo,
-  recording = false,
-  showTrail = true,
-  onToggleTrail
-}) {
+// Advances playback.t while playing (runs while the phases bar is open).
+function usePlaybackClock(playing, phases) {
+  const setPlayback = useStore((s) => s.setPlayback)
+  useEffect(() => {
+    if (!playing) return
+    const total = totalDuration(phases)
+    let raf
+    let last = performance.now()
+    const tick = (now) => {
+      const pb = useStore.getState().playback
+      if (!pb.playing) return
+      const next = pb.t + (now - last) * (pb.speed || 1)
+      last = now
+      if (next >= total) {
+        if (!pb.loop) return setPlayback({ t: total, playing: false })
+        setPlayback({ t: 0 })
+      } else {
+        setPlayback({ t: next })
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [playing, phases, setPlayback])
+}
+
+// Play the phase animation once from Start and record the board to a video.
+async function exportAnimation(stage, phases, name) {
+  const { setPlayback } = useStore.getState()
+  const total = totalDuration(phases)
+  if (!total || !stage) return
+  if (!videoRecordingSupported()) return alert('Video recording isn’t supported in this browser.')
+  const restore = { ...useStore.getState().playback }
+  try {
+    setPlayback({ open: true, phaseId: null, playing: false, t: 0 })
+    await new Promise(requestAnimationFrame)
+    await new Promise(requestAnimationFrame)
+    const blob = await recordBoardVideo(stage, () =>
+      new Promise((resolve) => {
+        const started = performance.now()
+        setPlayback({ playing: true, t: 0 })
+        const check = () => {
+          if (performance.now() - started < total + 250) return requestAnimationFrame(check)
+          setPlayback({ playing: false })
+          resolve()
+        }
+        requestAnimationFrame(check)
+      })
+    )
+    downloadAnimation(blob, name)
+  } catch (err) {
+    alert(err.message || 'Recording failed')
+  } finally {
+    setPlayback(restore)
+  }
+}
+
+export default function PhasesBar({ stageRef }) {
   const strategy = useStore((s) => s.strategy)
+  const showTrail = useStore((s) => s.ui.showTrail)
+  const onToggleTrail = useStore((s) => s.toggleShowTrail)
+  const [recording, setRecording] = useState(false)
+  const onExportVideo = async () => {
+    setRecording(true)
+    await exportAnimation(stageRef.current, phases, strategy.meta.name)
+    setRecording(false)
+  }
   const phases = useStore((s) => s.strategy.phases)
   const drawings = useStore((s) => s.strategy.drawings)
   const notes = useStore((s) => s.strategy.notes)
@@ -43,6 +105,7 @@ export default function PhasesBar({
   const setPhaseTiming = useStore((s) => s.setPhaseTiming)
   const setPhasePath = useStore((s) => s.setPhasePath)
   const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
+  usePlaybackClock(pb.playing, phases)
 
   const [visOpen, setVisOpen] = useState(false)
   const [pathsOpen, setPathsOpen] = useState(false)
