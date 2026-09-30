@@ -79,6 +79,28 @@ async function exportAnimation(stage, phases, name) {
   }
 }
 
+// One labelled row per map item for the Visible / Paths menus.
+const TYPE_LABEL = { note: 'Note', timer: 'Timer' }
+function itemRows(strategy, items) {
+  const n = {}
+  return items.map((item) => {
+    n[item.type] = (n[item.type] || 0) + 1
+    if (item.type === 'pill') {
+      const q = strategy.squads.find((x) => x.id === item.id)
+      return { item, label: q ? squadLabel(strategy, q) : 'Team', dot: q?.color }
+    }
+    if (item.type === 'marker') {
+      const meta = MARKER_KINDS[item.kind] || {}
+      return { item, label: item.label || meta.label || 'Marker', dot: meta.color }
+    }
+    if (item.type === 'drawing') {
+      return { item, label: `${DRAW_TOOL_LABEL[item.tool] ?? 'Line'} ${n.drawing}`, dot: item.color }
+    }
+    const text = item.text ? ` — ${item.text.slice(0, 16)}` : ''
+    return { item, label: `${TYPE_LABEL[item.type]} ${n[item.type]}${text}`, dot: item.color }
+  })
+}
+
 export default function PhasesBar({ stageRef }) {
   const strategy = useStore((s) => s.strategy)
   const showTrail = useStore((s) => s.ui.showTrail)
@@ -90,10 +112,7 @@ export default function PhasesBar({ stageRef }) {
     setRecording(false)
   }
   const phases = useStore((s) => s.strategy.phases)
-  const drawings = useStore((s) => s.strategy.drawings)
-  const notes = useStore((s) => s.strategy.notes)
-  const markers = useStore((s) => s.strategy.markers)
-  const squads = useStore((s) => s.strategy.squads)
+  const items = useStore((s) => s.strategy.items)
   const pb = useStore((s) => s.playback)
   const setPlayback = useStore((s) => s.setPlayback)
   const selectPhase = useStore((s) => s.selectPhase)
@@ -123,9 +142,9 @@ export default function PhasesBar({ stageRef }) {
     return () => window.removeEventListener('mousedown', onDoc)
   }, [visOpen, pathsOpen])
 
-  const pathChoices = drawings
-    .map((d, i) => ({ d, n: i + 1 }))
-    .filter(({ d }) => PATH_TOOLS.includes(d.tool))
+  const rows = itemRows(strategy, items)
+  const pills = rows.filter((r) => r.item.type === 'pill')
+  const pathChoices = rows.filter((r) => PATH_TOOLS.includes(r.item.tool))
 
   const total = totalDuration(phases)
   const hasPhases = phases.length > 0
@@ -142,9 +161,6 @@ export default function PhasesBar({ stageRef }) {
 
   const selPhase = pb.phaseId ? phases.find((p) => p.id === pb.phaseId) : null
   const selIndex = phases.findIndex((p) => p.id === pb.phaseId)
-  const placedSquads = squads.filter((q) => q.token)
-  const hasVisTargets =
-    drawings.length > 0 || notes.length > 0 || markers.length > 0 || placedSquads.length > 0
 
   return (
     <div className="phases-bar">
@@ -358,7 +374,7 @@ export default function PhasesBar({ stageRef }) {
             </select>
           </label>
 
-          {placedSquads.length > 0 && (
+          {pills.length > 0 && (
             <div className="pb-vis" ref={pathsRef}>
               <button
                 className={
@@ -381,21 +397,21 @@ export default function PhasesBar({ stageRef }) {
                       <div className="muted" style={{ fontSize: 10, padding: '2px 4px' }}>
                         a team walks its drawn path this phase
                       </div>
-                      {placedSquads.map((q) => (
-                        <label key={q.id}>
-                          <span className="mk-dot" style={{ background: q.color }} />
-                          {squadLabel(strategy, q)}
+                      {pills.map(({ item, label, dot }) => (
+                        <label key={item.id}>
+                          <span className="mk-dot" style={{ background: dot }} />
+                          {label}
                           <select
                             style={{ marginLeft: 'auto' }}
-                            value={selPhase.paths?.[q.id] || ''}
+                            value={selPhase.paths[item.id] || ''}
                             onChange={(e) =>
-                              setPhasePath(selPhase.id, q.id, e.target.value || null)
+                              setPhasePath(selPhase.id, item.id, e.target.value || null)
                             }
                           >
                             <option value="">— straight</option>
-                            {pathChoices.map(({ d, n }) => (
-                              <option key={d.id} value={d.id}>
-                                {DRAW_TOOL_LABEL[d.tool] ?? 'Line'} {n}
+                            {pathChoices.map((c) => (
+                              <option key={c.item.id} value={c.item.id}>
+                                {c.label}
                               </option>
                             ))}
                           </select>
@@ -408,7 +424,7 @@ export default function PhasesBar({ stageRef }) {
             </div>
           )}
 
-          {hasVisTargets && (
+          {rows.length > 0 && (
             <div className="pb-vis" ref={visRef}>
               <button className="tiny ghost" onClick={() => setVisOpen((v) => !v)}>
                 Visible ▾
@@ -418,63 +434,17 @@ export default function PhasesBar({ stageRef }) {
                   <div className="muted" style={{ fontSize: 10, padding: '2px 4px' }}>
                     shown in {selPhase.name}
                   </div>
-                  {placedSquads.map((q) => {
-                    const hidden = selPhase.board.hiddenSquads?.includes(q.id)
-                    return (
-                      <label key={q.id}>
-                        <input
-                          type="checkbox"
-                          checked={!hidden}
-                          onChange={() => togglePhaseHidden(selPhase.id, 'squads', q.id)}
-                        />
-                        <span className="mk-dot" style={{ background: q.color }} />
-                        {squadLabel(strategy, q)}
-                      </label>
-                    )
-                  })}
-                  {markers.map((m) => {
-                    const hidden = selPhase.board.hiddenMarkers?.includes(m.id)
-                    const meta = MARKER_KINDS[m.kind] || {}
-                    return (
-                      <label key={m.id}>
-                        <input
-                          type="checkbox"
-                          checked={!hidden}
-                          onChange={() => togglePhaseHidden(selPhase.id, 'markers', m.id)}
-                        />
-                        <span className="mk-dot" style={{ background: meta.color }} />
-                        {meta.label || 'Marker'}
-                      </label>
-                    )
-                  })}
-                  {drawings.map((d, i) => {
-                    const hidden = selPhase.board.hiddenDrawings?.includes(d.id)
-                    return (
-                      <label key={d.id}>
-                        <input
-                          type="checkbox"
-                          checked={!hidden}
-                          onChange={() => togglePhaseHidden(selPhase.id, 'drawings', d.id)}
-                        />
-                        <span className="mk-dot" style={{ background: d.color }} />
-                        {DRAW_TOOL_LABEL[d.tool] ?? 'Line'} {i + 1}
-                      </label>
-                    )
-                  })}
-                  {notes.map((n, i) => {
-                    const hidden = selPhase.board.hiddenNotes?.includes(n.id)
-                    return (
-                      <label key={n.id}>
-                        <input
-                          type="checkbox"
-                          checked={!hidden}
-                          onChange={() => togglePhaseHidden(selPhase.id, 'notes', n.id)}
-                        />
-                        Note {i + 1}
-                        {n.text ? ` — ${n.text.slice(0, 16)}` : ''}
-                      </label>
-                    )
-                  })}
+                  {rows.map(({ item, label, dot }) => (
+                    <label key={item.id}>
+                      <input
+                        type="checkbox"
+                        checked={!selPhase.hidden.includes(item.id)}
+                        onChange={() => togglePhaseHidden(selPhase.id, item.id)}
+                      />
+                      {dot && <span className="mk-dot" style={{ background: dot }} />}
+                      {label}
+                    </label>
+                  ))}
                 </div>
               )}
             </div>

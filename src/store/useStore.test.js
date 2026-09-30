@@ -88,37 +88,64 @@ describe('team + marker store logic', () => {
     const qid = S().strategy.squads[0].id
     S().addPlayer('ally', qid, { role: 'Tank' })
     S().addPlayer('ally', qid, { role: 'Healer' })
-    S().setSquadToken(qid, { x: 5, y: 5 })
+    S().placePill(qid, { x: 5, y: 5 })
     S().addSquad('ally', 'attack') // a second team after the source
     S().duplicateSquad(qid)
     const sq = S().strategy.squads
     expect(sq).toHaveLength(3)
     expect(sq[1].id).not.toBe(qid) // dup inserted at index 1
     expect(sq[1].category).toBe('attack')
-    expect(sq[1].token).toBeNull()
+    expect(S().strategy.items.map((i) => i.id)).toEqual([qid]) // the copy isn't placed
     expect(sq[1].color).not.toBe(sq[0].color) // gets its own accent, not the source's
     expect(S().strategy.players.filter((p) => p.squadId === sq[1].id).map((p) => p.role))
       .toEqual(['Tank', 'Healer'])
   })
 
-  it('setSquadToken stamps token.at so the newest sorts last', () => {
+  it('placePill adds one pill per team; placing again moves it to the front', () => {
     S().addSquad('ally')
     S().addSquad('ally')
     const [q1, q2] = S().strategy.squads
-    S().setSquadToken(q1.id, { x: 10, y: 10 })
-    S().setSquadToken(q2.id, { x: 20, y: 20 })
-    const t1 = S().strategy.squads.find((q) => q.id === q1.id).token
-    const t2 = S().strategy.squads.find((q) => q.id === q2.id).token
-    expect(t2.at).toBeGreaterThanOrEqual(t1.at)
+    S().placePill(q1.id, { x: 10.4, y: 10 })
+    S().placePill(q2.id, { x: 20, y: 20 })
+    S().placePill(q1.id, { x: 30, y: 30 })
+    const pills = S().strategy.items
+    expect(pills.map((i) => i.id)).toEqual([q2.id, q1.id])
+    expect(pills[1]).toEqual({ id: q1.id, type: 'pill', x: 30, y: 30 })
   })
 
-  it('updateMarker moves a dragged marker to the top of the stack', () => {
-    S().addMarker('attack', { x: 0, y: 0 })
-    S().addMarker('defend', { x: 5, y: 5 })
-    const firstId = S().strategy.markers[0].id
-    S().updateMarker(firstId, { x: 99, y: 99 })
-    const markers = S().strategy.markers
-    expect(markers[markers.length - 1].id).toBe(firstId)
+  it('removing a team removes its pill', () => {
+    S().addSquad('ally')
+    const qid = S().strategy.squads[0].id
+    S().placePill(qid, { x: 1, y: 1 })
+    S().removeSquad(qid)
+    expect(S().strategy.items).toEqual([])
+  })
+
+  it('updateItem moves a dragged item to the front', () => {
+    const a = S().addItem({ type: 'marker', kind: 'attack', x: 0, y: 0 })
+    S().addItem({ type: 'marker', kind: 'defend', x: 5, y: 5 })
+    S().updateItem(a, { x: 99, y: 99 })
+    const items = S().strategy.items
+    expect(items[items.length - 1].id).toBe(a)
+    S().updateItem(a, { label: 'x' }) // no move -> stays put
+    expect(S().strategy.items[1].id).toBe(a)
+  })
+
+  it('clearItems removes only that type', () => {
+    S().addItem({ type: 'marker', kind: 'attack', x: 0, y: 0 })
+    S().addItem({ type: 'note', x: 0, y: 0, text: '', color: '#fff' })
+    S().clearItems('marker')
+    expect(S().strategy.items.map((i) => i.type)).toEqual(['note'])
+  })
+
+  it('duplicateItem offsets x/y (points for drawings) and skips pills', () => {
+    const n = S().addItem({ type: 'note', x: 10, y: 20, text: 'hi', color: '#fff' })
+    const copy = S().duplicateItem(n)
+    expect(S().strategy.items.find((i) => i.id === copy)).toMatchObject({ x: 24, y: 34, text: 'hi' })
+    S().addSquad('ally')
+    const q = S().strategy.squads[0].id
+    S().placePill(q, { x: 0, y: 0 })
+    expect(S().duplicateItem(q)).toBeNull()
   })
 
   it('togglePanel flips the persisted panel flag', () => {
@@ -165,51 +192,73 @@ describe('planning phases', () => {
     S().addSquad('ally')
     S().addSquad('enemy')
     const [q1, q2] = S().strategy.squads
-    S().setSquadToken(q1.id, { x: 100, y: 100 })
-    S().setSquadToken(q2.id, { x: 200, y: 200 })
+    S().placePill(q1.id, { x: 100, y: 100 })
+    S().placePill(q2.id, { x: 200, y: 200 })
     return [q1.id, q2.id]
   }
+  const phase = (i) => S().strategy.phases[i]
+  const drawing = (points = [0, 0, 100, 0]) =>
+    S().addItem({ type: 'drawing', tool: 'arrow', color: '#fff', width: 4, points })
 
-  it('addPhase snapshots the placed pills and selects the phase', () => {
+  it('addPhase snapshots every positioned item and selects the phase', () => {
     const [q1] = seedTwoPills()
+    const m = S().addItem({ type: 'marker', kind: 'attack', x: 7, y: 8 })
+    drawing() // no x/y -> not keyframed
     S().addPhase()
     expect(S().strategy.phases).toHaveLength(1)
-    const ph = S().strategy.phases[0]
-    expect(ph.board.squads[q1]).toEqual({ x: 100, y: 100 })
-    expect(S().playback.phaseId).toBe(ph.id)
+    expect(phase(0).pos[q1]).toEqual({ x: 100, y: 100 })
+    expect(phase(0).pos[m]).toEqual({ x: 7, y: 8 })
+    expect(Object.keys(phase(0).pos)).toHaveLength(3)
+    expect(S().playback.phaseId).toBe(phase(0).id)
   })
 
-  it('updatePhaseSquad writes only to that phase, not the live token', () => {
+  it('dragItem writes the phase keyframe while a phase is edited, else the live item', () => {
     const [q1] = seedTwoPills()
     S().addPhase()
-    const phId = S().strategy.phases[0].id
-    S().updatePhaseSquad(phId, q1, { x: 999, y: 0 })
-    expect(S().strategy.phases[0].board.squads[q1]).toEqual({ x: 999, y: 0 })
-    expect(S().strategy.squads.find((q) => q.id === q1).token).toMatchObject({ x: 100, y: 100 })
+    S().setPlayback({ open: true })
+    S().dragItem(q1, { x: 999, y: 0 })
+    expect(phase(0).pos[q1]).toEqual({ x: 999, y: 0 })
+    expect(S().strategy.items.find((i) => i.id === q1)).toMatchObject({ x: 100, y: 100 })
+    S().selectPhase(null) // Start -> live board
+    S().dragItem(q1, { x: 1, y: 2 })
+    expect(S().strategy.items.find((i) => i.id === q1)).toMatchObject({ x: 1, y: 2 })
   })
 
-  it('addPhase(sourceId) copies the source board and inserts after it', () => {
+  it('removeFromBoard hides in the edited phase, deletes otherwise', () => {
     seedTwoPills()
+    const m = S().addItem({ type: 'marker', kind: 'attack', x: 0, y: 0 })
     S().addPhase()
-    const first = S().strategy.phases[0].id
-    S().updatePhaseSquad(first, S().strategy.squads[0].id, { x: 5, y: 5 })
+    S().setPlayback({ open: true })
+    S().removeFromBoard(m)
+    expect(phase(0).hidden).toContain(m)
+    expect(S().strategy.items.some((i) => i.id === m)).toBe(true)
+    S().selectPhase(null)
+    S().removeFromBoard(m)
+    expect(S().strategy.items.some((i) => i.id === m)).toBe(false)
+    expect(phase(0).hidden).not.toContain(m) // purged
+  })
+
+  it('addPhase(sourceId) copies the source keyframe and inserts after it', () => {
+    const [q1] = seedTwoPills()
+    S().addPhase()
+    const first = phase(0).id
+    S().setPhasePos(first, q1, { x: 5, y: 5 })
     S().addPhase(first)
     expect(S().strategy.phases).toHaveLength(2)
-    expect(S().strategy.phases[1].board.squads[S().strategy.squads[0].id]).toEqual({ x: 5, y: 5 })
+    expect(phase(1).pos[q1]).toEqual({ x: 5, y: 5 })
   })
 
   it('selectPhase sets phaseId + scrubs t to its arrival time', () => {
     seedTwoPills()
     S().addPhase() // duration 2000
     S().addPhase() // duration 2000
-    const [p1, p2] = S().strategy.phases
+    const p2 = phase(1)
     S().selectPhase(p2.id)
     expect(S().playback.phaseId).toBe(p2.id)
     expect(S().playback.t).toBe(4000)
     S().selectPhase(null)
     expect(S().playback.phaseId).toBeNull()
     expect(S().playback.t).toBe(0)
-    void p1
   })
 
   it('movePhase reorders; removePhase drops it and clears selection', () => {
@@ -237,121 +286,91 @@ describe('planning phases', () => {
     expect(S().strategy.phases.map((p) => p.id)).toEqual([a, b, c])
   })
 
-  it('setPhasePath assigns/clears a drawn path for a squad', () => {
-    seedTwoPills()
-    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 100, 0] })
-    const did = S().strategy.drawings[0].id
+  it('setPhasePath assigns/clears a drawn path for a pill', () => {
+    const [q] = seedTwoPills()
+    const did = drawing()
     S().addPhase()
-    const [p] = S().strategy.phases
-    const q = S().strategy.squads[0].id
-    S().setPhasePath(p.id, q, did)
-    expect(S().strategy.phases[0].paths[q]).toBe(did)
-    S().setPhasePath(p.id, q, null)
-    expect(S().strategy.phases[0].paths[q]).toBeUndefined()
+    S().setPhasePath(phase(0).id, q, did)
+    expect(phase(0).paths[q]).toBe(did)
+    S().setPhasePath(phase(0).id, q, null)
+    expect(phase(0).paths[q]).toBeUndefined()
   })
 
-  it('removing a drawing clears any phase paths that referenced it', () => {
-    seedTwoPills()
-    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 1, 1] })
-    const did = S().strategy.drawings[0].id
+  it('removing a drawing clears any phase paths that follow it', () => {
+    const [q] = seedTwoPills()
+    const did = drawing()
     S().addPhase()
-    const q = S().strategy.squads[0].id
-    S().setPhasePath(S().strategy.phases[0].id, q, did)
-    S().removeDrawing(did)
-    expect(S().strategy.phases[0].paths[q]).toBeUndefined()
+    S().setPhasePath(phase(0).id, q, did)
+    S().removeItem(did)
+    expect(phase(0).paths[q]).toBeUndefined()
   })
 
-  it('duplicateDrawing copies a drawing, offset, right after the source', () => {
-    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 100, 0] })
-    const src = S().strategy.drawings[0].id
-    const nid = S().duplicateDrawing(src)
-    const ds = S().strategy.drawings
-    expect(ds).toHaveLength(2)
-    expect(ds[1].id).toBe(nid)
+  it('duplicateItem copies a drawing, offset, right after the source', () => {
+    const src = drawing()
+    const nid = S().duplicateItem(src)
+    const ds = S().strategy.items
+    expect(ds.map((d) => d.id)).toEqual([src, nid])
     expect(ds[1].points).toEqual([14, 14, 114, 14])
     expect(ds[0].points).toEqual([0, 0, 100, 0]) // source untouched
+    expect(S().duplicateItem('nope')).toBeNull()
   })
 
-  it('duplicateDrawing is a no-op for an unknown id', () => {
-    expect(S().duplicateDrawing('nope')).toBeNull()
-    expect(S().strategy.drawings).toHaveLength(0)
+  it('moveItem swaps with the next item of the same type, clamped at the ends', () => {
+    const a = drawing([0, 0, 1, 1])
+    const m = S().addItem({ type: 'marker', kind: 'attack', x: 0, y: 0 })
+    const b = drawing([0, 0, 2, 2])
+    const ids = () => S().strategy.items.map((i) => i.id)
+    S().moveItem(a, 1) // skips the marker, swaps with b
+    expect(ids()).toEqual([b, m, a])
+    S().moveItem(a, 1) // already last drawing -> no change
+    expect(ids()).toEqual([b, m, a])
+    S().moveItem(b, -1) // already first -> no change
+    expect(ids()).toEqual([b, m, a])
   })
 
-  it('moveDrawing reorders z-order and clamps at the ends', () => {
-    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 1, 1] })
-    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 2, 2] })
-    S().addDrawing({ tool: 'arrow', color: '#fff', width: 4, points: [0, 0, 3, 3] })
-    const [a, b, c] = S().strategy.drawings.map((d) => d.id)
-    S().moveDrawing(a, 1) // bring forward one
-    expect(S().strategy.drawings.map((d) => d.id)).toEqual([b, a, c])
-    S().moveDrawing(c, 1) // already last -> clamped, no change
-    expect(S().strategy.drawings.map((d) => d.id)).toEqual([b, a, c])
-    S().moveDrawing(b, -1) // already first -> clamped, no change
-    expect(S().strategy.drawings.map((d) => d.id)).toEqual([b, a, c])
-  })
-
-  it('removing a team also purges it from every phase board', () => {
+  it('removing a team purges its pill from every phase', () => {
     const [q1] = seedTwoPills()
     S().addPhase()
     S().removeSquad(q1)
-    expect(S().strategy.phases[0].board.squads[q1]).toBeUndefined()
+    expect(phase(0).pos[q1]).toBeUndefined()
   })
 
-  it('a marker added while a phase is selected is hidden in the other phases', () => {
+  it('an item added while a phase is selected is hidden in the other phases', () => {
     seedTwoPills()
     S().addPhase()
     S().addPhase()
-    const [p1, p2] = S().strategy.phases
-    S().selectPhase(p1.id)
-    S().addMarker('attack', { x: 10, y: 10 })
-    const mId = S().strategy.markers[0].id
-    expect(S().strategy.phases[0].board.hiddenMarkers || []).not.toContain(mId)
-    expect(S().strategy.phases[1].board.hiddenMarkers).toContain(mId)
-    void p2
+    S().selectPhase(phase(0).id)
+    const m = S().addItem({ type: 'marker', kind: 'attack', x: 10, y: 10 })
+    expect(phase(0).hidden).not.toContain(m)
+    expect(phase(1).hidden).toContain(m)
   })
 
   it('a pill dropped while a phase is selected is scoped to that phase', () => {
     S().addSquad('ally')
     const qId = S().strategy.squads[0].id
-    S().addPhase() // Start snapshot, no pills yet
     S().addPhase()
-    const [p1] = S().strategy.phases
-    S().selectPhase(p1.id)
-    S().setSquadToken(qId, { x: 5, y: 5 })
-    expect(S().strategy.phases[0].board.hiddenSquads || []).not.toContain(qId)
-    expect(S().strategy.phases[1].board.hiddenSquads).toContain(qId)
+    S().addPhase()
+    S().selectPhase(phase(0).id)
+    S().placePill(qId, { x: 5, y: 5 })
+    expect(phase(0).hidden).not.toContain(qId)
+    expect(phase(1).hidden).toContain(qId)
   })
 
-  it('adding a marker with no phase selected touches no phase', () => {
+  it('adding an item with no phase selected touches no phase', () => {
     seedTwoPills()
     S().addPhase()
     S().selectPhase(null)
-    S().addMarker('attack', { x: 1, y: 1 })
-    expect(S().strategy.phases[0].board.hiddenMarkers || []).toHaveLength(0)
+    S().addItem({ type: 'marker', kind: 'attack', x: 1, y: 1 })
+    expect(phase(0).hidden).toHaveLength(0)
   })
 
-  it('togglePhaseHidden flips marker visibility for one phase', () => {
+  it('togglePhaseHidden flips visibility for one phase', () => {
     seedTwoPills()
-    S().addMarker('attack', { x: 0, y: 0 })
-    const mId = S().strategy.markers[0].id
+    const m = S().addItem({ type: 'marker', kind: 'attack', x: 0, y: 0 })
     S().addPhase()
-    const phId = S().strategy.phases[0].id
-    S().togglePhaseHidden(phId, 'markers', mId)
-    expect(S().strategy.phases[0].board.hiddenMarkers).toContain(mId)
-    S().togglePhaseHidden(phId, 'markers', mId)
-    expect(S().strategy.phases[0].board.hiddenMarkers).not.toContain(mId)
-  })
-
-  it('removeMarker purges phase hiddenMarkers entries', () => {
-    seedTwoPills()
-    S().addPhase()
-    S().addPhase()
-    const [p1] = S().strategy.phases
-    S().selectPhase(p1.id)
-    S().addMarker('attack', { x: 0, y: 0 })
-    const mId = S().strategy.markers[0].id
-    expect(S().strategy.phases[1].board.hiddenMarkers).toContain(mId)
-    S().removeMarker(mId)
-    expect(S().strategy.phases[1].board.hiddenMarkers).not.toContain(mId)
+    S().togglePhaseHidden(phase(0).id, m)
+    expect(phase(0).hidden).toContain(m)
+    S().togglePhaseHidden(phase(0).id, m)
+    expect(phase(0).hidden).not.toContain(m)
   })
 })

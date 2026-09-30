@@ -1263,155 +1263,22 @@ select {
   color: var(--text-dim);
 }
 
-/* ---- notes & timers overlay ------------------------------- */
-.annotations-overlay {
+/* ---- note text editor (textarea laid over a Konva note while editing) --- */
+.note-editor {
   position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.ann {
-  position: absolute;
-  pointer-events: auto;
-  border: 1px solid rgba(0, 0, 0, 0.32);
-  border-radius: var(--r);
-  box-shadow: var(--shadow-2);
-  transform: translate(-12px, -12px);
-  overflow: hidden;
-}
-.ann-bar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 5px;
-  cursor: grab;
-  background: rgba(0, 0, 0, 0.16);
-}
-.ann-bar:active {
-  cursor: grabbing;
-}
-.ann-grip {
-  color: rgba(0, 0, 0, 0.45);
-  font-size: 12px;
-  user-select: none;
-}
-.ann-x {
-  margin-left: auto;
-  padding: 0 5px;
-  border: none;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.55);
-  font-size: 12px;
-}
-.ann-x:hover {
-  color: #000;
-  background: transparent;
-}
-
-.note {
-  display: flex;
-  flex-direction: column;
-  width: 178px;
-  color: #1b1810;
-  background: #ffe08a;
-}
-.note .note-colors {
-  display: flex;
-  gap: 3px;
-}
-.note .swatch {
-  width: 12px;
-  height: 12px;
+  z-index: 6;
+  margin: 0;
   padding: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.3);
-}
-.note textarea {
-  display: block;
-  flex: 1;
-  width: 100%;
-  min-height: 58px;
   border: none;
   border-radius: 0;
-  padding: 7px 8px;
-  background: transparent;
-  color: inherit;
+  outline: none;
+  resize: none;
+  color: #1b1810;
   font-size: 12px;
   line-height: 1.4;
-  resize: none;
 }
-.note textarea:focus {
-  outline: none;
+.note-editor:focus {
   box-shadow: none;
-}
-
-/* corner grip — drag to resize the whole note (width + height together) */
-.ann-resize {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 18px;
-  height: 18px;
-  cursor: nwse-resize;
-  touch-action: none;
-  background:
-    linear-gradient(
-      135deg,
-      transparent 0 38%,
-      rgba(0, 0, 0, 0.4) 38% 46%,
-      transparent 46% 54%,
-      rgba(0, 0, 0, 0.4) 54% 62%,
-      transparent 62%
-    );
-}
-.ann-resize:hover {
-  background:
-    linear-gradient(
-      135deg,
-      transparent 0 38%,
-      rgba(0, 0, 0, 0.65) 38% 46%,
-      transparent 46% 54%,
-      rgba(0, 0, 0, 0.65) 54% 62%,
-      transparent 62%
-    );
-}
-
-.timer {
-  width: 132px;
-  background: var(--surface-2);
-  color: var(--text);
-  border-color: var(--border-2);
-}
-.timer .ann-bar {
-  background: rgba(255, 255, 255, 0.05);
-}
-.timer .ann-grip,
-.timer .ann-x {
-  color: var(--text-faint);
-}
-.timer .ann-x:hover {
-  color: var(--text);
-}
-.timer-clock {
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-size: 27px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  padding: 6px 0 2px;
-}
-.timer.done .timer-clock {
-  color: var(--danger);
-}
-.timer-controls {
-  display: flex;
-  gap: 3px;
-  padding: 5px;
-}
-.timer-controls button {
-  flex: 1;
-  padding: 4px 0;
-  font-size: 12px;
 }
 
 /* ---- crash screen --------------------------------------- */
@@ -1609,9 +1476,6 @@ select {
 .phases-bar {
   animation: rise-in 0.28s var(--ease-out);
 }
-.ann {
-  animation: pop-in 0.2s var(--spring);
-}
 
 /* glassy menus */
 .strat-pop,
@@ -1716,10 +1580,6 @@ button.primary:hover {
   }
   .pb-chip {
     padding: 7px 12px;
-  }
-  .ann-resize {
-    min-inline-size: 26px;
-    min-block-size: 26px;
   }
 }
 

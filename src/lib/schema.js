@@ -2,8 +2,22 @@
 //
 // A "strategy" is the whole planning document. It is what gets autosaved to
 // localStorage and what export/import reads and writes.
+//
+// v2 shape:
+//   squads / players  roster (who's in which team)
+//   items             everything on the map, one list; array order = draw order
+//                     within a type. A team's pill uses the team's id.
+//   phases            keyframes over items: pos / hidden / paths (see below)
 
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
+
+// type -> the fields besides id/type an item carries
+//   pill    { x, y }                       id === its squad's id
+//   marker  { kind, x, y, label?, scale?, rotation? }
+//   drawing { tool, color, width, points }
+//   note    { x, y, text, color, width?, height? }
+//   timer   { x, y, seconds }
+export const ITEM_TYPES = ['pill', 'marker', 'drawing', 'note', 'timer']
 
 export const ROLES = ['Tank', 'DPS', 'Healer']
 
@@ -82,10 +96,7 @@ export function emptyStrategy() {
     },
     squads: [],
     players: [],
-    markers: [],
-    drawings: [],
-    notes: [],
-    timers: [],
+    items: [],
     phases: []
   }
 }
@@ -100,24 +111,45 @@ const pointDict = (d) => {
   }
   return out
 }
+const arr = (v) => (Array.isArray(v) ? v : [])
 const EASINGS = ['inout', 'linear', 'in', 'out']
+
+// A phase is a keyframe over the items:
+//   pos    { [itemId]: { x, y } }   where the item sits at this phase
+//   hidden [itemId]                 items not shown in this phase
+//   paths  { [pillId]: drawingId }  a pill walks that drawing during the phase
+// v1 phases kept these in `board` split per entity kind.
 function normalizePhase(p, i) {
+  const b = p?.board
   return {
     id: p?.id || `ph_${i}`,
     name: typeof p?.name === 'string' && p.name ? p.name : `Phase ${i + 1}`,
     duration: Math.max(0, num(p?.duration, 2000)),
     hold: Math.max(0, num(p?.hold, 0)),
     easing: EASINGS.includes(p?.easing) ? p.easing : 'inout',
-    board: {
-      squads: pointDict(p?.board?.squads),
-      markers: pointDict(p?.board?.markers),
-      hiddenDrawings: Array.isArray(p?.board?.hiddenDrawings) ? p.board.hiddenDrawings : [],
-      hiddenNotes: Array.isArray(p?.board?.hiddenNotes) ? p.board.hiddenNotes : [],
-      hiddenMarkers: Array.isArray(p?.board?.hiddenMarkers) ? p.board.hiddenMarkers : [],
-      hiddenSquads: Array.isArray(p?.board?.hiddenSquads) ? p.board.hiddenSquads : []
-    },
+    pos: pointDict(b ? { ...b.squads, ...b.markers } : p?.pos),
+    hidden: b
+      ? [...new Set([b.hiddenSquads, b.hiddenMarkers, b.hiddenDrawings, b.hiddenNotes].flatMap(arr))]
+      : arr(p?.hidden),
     paths: p?.paths && typeof p.paths === 'object' ? { ...p.paths } : {}
   }
+}
+
+// v1 kept each kind of map entity in its own array, and a placed team as
+// squad.token. Fold them into one items list (pills newest-on-top by token.at).
+function itemsFromV1(input) {
+  const pills = arr(input.squads)
+    .filter((q) => q?.token && Number.isFinite(+q.token.x))
+    .sort((a, b) => (a.token.at || 0) - (b.token.at || 0))
+    .map((q) => ({ id: q.id, type: 'pill', x: +q.token.x, y: +q.token.y }))
+  const typed = (list, type) => arr(list).map(({ type: _t, ...rest }) => ({ ...rest, type }))
+  return [
+    ...pills,
+    ...typed(input.markers, 'marker'),
+    ...typed(input.drawings, 'drawing'),
+    ...typed(input.notes, 'note'),
+    ...typed(input.timers, 'timer')
+  ]
 }
 
 // Bring any older / partial document up to the current shape. Kept intentionally
@@ -143,8 +175,7 @@ export function migrateStrategy(input) {
         name: typeof q.name === 'string' ? q.name : '',
         lane: q.lane ?? 'Unassigned',
         targetSize: Number(q.targetSize) || DEFAULT_SQUAD_SIZE,
-        color: q.color ?? squadColorForIndex(0, q.side),
-        token: q.token && typeof q.token === 'object' ? q.token : null
+        color: q.color ?? squadColorForIndex(0, q.side)
       }))
     : []
   merged.players = Array.isArray(input.players)
@@ -155,16 +186,20 @@ export function migrateStrategy(input) {
         squadId: p.squadId ?? null
       }))
     : []
-  merged.markers = Array.isArray(input.markers) ? input.markers : []
-  merged.drawings = Array.isArray(input.drawings) ? input.drawings : []
-  merged.notes = Array.isArray(input.notes) ? input.notes : []
-  merged.timers = Array.isArray(input.timers) ? input.timers : []
-  merged.phases = Array.isArray(input.phases) ? input.phases.map(normalizePhase) : []
-  delete merged.view // view (zoom/pan) is UI-only, kept outside the document
+  merged.phases = arr(input.phases).map(normalizePhase)
+  // view (zoom/pan) is UI-only, kept outside the document; the rest are v1
+  // per-kind arrays now folded into items
+  for (const k of ['view', 'markers', 'drawings', 'notes', 'timers']) delete merged[k]
 
   // Every player belongs to a team; drop any that don't (incl. dangling refs).
   const squadIds = new Set(merged.squads.map((s) => s.id))
   merged.players = merged.players.filter((p) => p.squadId && squadIds.has(p.squadId))
+
+  // Items: keep known types with an id; a pill must still have its team.
+  merged.items = (Array.isArray(input.items) ? input.items : itemsFromV1(input)).filter(
+    (it) =>
+      it?.id && ITEM_TYPES.includes(it.type) && (it.type !== 'pill' || squadIds.has(it.id))
+  )
 
   return merged
 }

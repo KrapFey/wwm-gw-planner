@@ -49,14 +49,16 @@ VM pulls `main`, builds and rsyncs `dist/`. Full runbook + `deploy/Caddyfile` in
 
 ## Planning-phase animation
 
-`strategy.phases` is an ordered list of keyframes; the live board is the "Start"
-frame. Open the timeline bar (dock button) → `+ Phase` snapshots the placed team
-pills + markers. Select a phase chip → the board shows that snapshot and drags
-edit *it*; select **Start** → drags edit the live board. Play eases every pill /
-marker between consecutive phases (`easeInOutCubic`), with per-phase transition
-and hold times. Pure interpolation is in `src/lib/playback.js`; `playback` is a
-transient store slice (not persisted, not undoable). Increments 2–4 (paths,
-per-phase visibility, polish) are not built yet.
+Everything on the map is one list, `strategy.items` (pills, markers, drawings,
+notes, timers; a team's pill uses the team's id). `strategy.phases` is an ordered
+list of keyframes over those items — `pos` (where each item sits), `hidden` (what
+the phase doesn't show) and `paths` (a pill walks a drawing). The live board is
+the "Start" frame. Open the timeline bar → `+ Phase` snapshots every positioned
+item. Select a phase chip → drags edit *that* keyframe and Delete hides the item
+in that phase; select **Start** → they edit the live board. Play eases every item
+between phases, per-phase easing / transition / hold. Pure interpolation is in
+`src/lib/playback.js`; `playback` is a transient store slice (not persisted, not
+undoable).
 
 ## Strategy library
 
@@ -95,14 +97,16 @@ Second map toolbar row (hidden while editing map layout):
   drag on the map. Double-click a line to delete it. `Clear drawings` removes all.
 - **Objective markers** — Attack / Danger / Defend / Hold / Yes / No. Click a
   button to drop one at the view centre; drag to place; double-click to remove.
-- **+ Note** — a draggable sticky (colour options, free text). Notes and timers
-  are HTML overlaid on the canvas: they anchor to a map point and pan/zoom with
-  it but keep a constant on-screen size. Edit commits on blur.
+- **+ Note** — a draggable, resizable sticky (colour swatches, free text;
+  double-click to edit). Notes and timers are Konva items like everything else:
+  they anchor to a map point and pan with it, keep a constant on-screen size,
+  animate between phases and show up in PNG / video exports.
 - **+ Timer** — draggable MM:SS countdown with start/pause/reset and ±10 s. The
   configured duration is saved; the running countdown is local to each viewer.
 
-Markers and drawings live in the strategy document (exported, undoable). Notes and
-timers too. Map viewport does not.
+All map items live in the strategy document (exported, undoable); the map
+viewport does not. With an item selected: Delete removes it, Ctrl+D duplicates
+it, `[` / `]` sends it back / brings it forward.
 
 ## Team organization model
 

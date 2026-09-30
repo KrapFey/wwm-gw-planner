@@ -18,12 +18,11 @@ const DISC_R = 15
 // red / Defense orange). The count badge keeps the team's own accent so
 // individual teams stay tellable. Middle-click collapses it to a bare disc:
 // category colour ring, team colour fill.
-// `editingPhase` (a phase id or null) is the only interaction prop, so this
-// component stays cheap to memoize — it does the store calls itself.
-function SquadToken({ squad, override, editingPhase = null, locked = false }) {
-  const setSquadToken = useStore((s) => s.setSquadToken)
-  const updatePhaseSquad = useStore((s) => s.updatePhaseSquad)
-  const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
+// It does its own store calls (dragItem / removeFromBoard route to the phase
+// being edited), so it memoizes cleanly.
+function SquadToken({ squad, x, y, selected = false, onSelect, locked = false }) {
+  const dragItem = useStore((s) => s.dragItem)
+  const removeFromBoard = useStore((s) => s.removeFromBoard)
   // only the players (for the fill/role tally) and squads (for the ordinal in
   // the default name) — not the whole doc, so marker/drawing/note edits don't
   // re-render every pill
@@ -34,14 +33,11 @@ function SquadToken({ squad, override, editingPhase = null, locked = false }) {
   const strategy = { players, squads }
   const { fill, byRole } = squadStats(strategy, squad)
 
-  const move = (pos) =>
-    editingPhase ? updatePhaseSquad(editingPhase, squad.id, pos) : setSquadToken(squad.id, pos)
-  const remove = () =>
-    editingPhase
-      ? togglePhaseHidden(editingPhase, 'squads', squad.id)
-      : setSquadToken(squad.id, null)
-  const x = override?.x ?? squad.token.x
-  const y = override?.y ?? squad.token.y
+  const remove = () => removeFromBoard(squad.id)
+  const select = (e) => {
+    e.cancelBubble = true
+    onSelect?.(squad.id)
+  }
 
   const pillCol = pillColor(squad.side, squad.category)
   const name = squadLabel(strategy, squad)
@@ -61,7 +57,9 @@ function SquadToken({ squad, override, editingPhase = null, locked = false }) {
     draggable: !locked,
     onMouseDown,
     onDragStart: (e) => (e.cancelBubble = true),
-    onDragEnd: (e) => move(clampToMap({ x: e.target.x(), y: e.target.y() })),
+    onDragEnd: (e) => dragItem(squad.id, clampToMap({ x: e.target.x(), y: e.target.y() })),
+    onClick: select,
+    onTap: select,
     onDblClick: locked ? undefined : remove,
     onDblTap: locked ? undefined : remove
   }
@@ -69,6 +67,9 @@ function SquadToken({ squad, override, editingPhase = null, locked = false }) {
   if (collapsed) {
     return (
       <Group {...dragProps}>
+        {selected && (
+          <Circle radius={DISC_R + 6} stroke="#7c6cff" strokeWidth={2} dash={[5, 4]} listening={false} />
+        )}
         <Circle
           radius={DISC_R}
           fill={squad.color}
@@ -113,6 +114,19 @@ function SquadToken({ squad, override, editingPhase = null, locked = false }) {
 
   return (
     <Group {...dragProps}>
+      {selected && (
+        <Rect
+          x={left - 5}
+          y={-H / 2 - 5}
+          width={w + 10}
+          height={H + 10}
+          cornerRadius={H / 2 + 5}
+          stroke="#7c6cff"
+          strokeWidth={2}
+          dash={[5, 4]}
+          listening={false}
+        />
+      )}
       {/* base + pill wash */}
       <Rect
         x={left}

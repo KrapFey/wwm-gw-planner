@@ -5,8 +5,9 @@ import { BOX_DRAW_TOOLS, reduceCurvedArrow } from '../../lib/tacticalDefs.js'
 // Pointer state machine for the drawing tools (pen / arrows / shapes) and the
 // eraser. `draft` is the in-progress drawing to render live.
 export function useDrawTool({ tool, color, width, stageRef, pointerMap }) {
-  const addDrawing = useStore((s) => s.addDrawing)
-  const removeDrawing = useStore((s) => s.removeDrawing)
+  const addItem = useStore((s) => s.addItem)
+  const removeItem = useStore((s) => s.removeItem)
+  const addDrawing = (d) => addItem({ type: 'drawing', ...d })
   const [draft, setDraft] = useState(null)
   const draftRef = useRef(null)
   const erasingRef = useRef(false)
@@ -15,7 +16,7 @@ export function useDrawTool({ tool, color, width, stageRef, pointerMap }) {
     const stage = stageRef.current
     const pos = stage?.getPointerPosition()
     const hit = pos && stage.getIntersection(pos)
-    if (hit && hit.name() === 'drawing') removeDrawing(hit.id())
+    if (hit && hit.name() === 'drawing') removeItem(hit.id())
   }
 
   function end() {

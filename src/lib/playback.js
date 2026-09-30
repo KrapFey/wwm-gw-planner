@@ -1,9 +1,8 @@
 // Pure helpers for animating the planning phases.
 //
 // The board's normal state is the "Start" frame; each phase is a keyframe after
-// it. A phase's `board` snapshots positions:
-//   board.squads  = { [squadId]:  { x, y } }
-//   board.markers = { [markerId]: { x, y } }
+// it. A phase stores item positions as `pos = { [itemId]: { x, y } }` and the
+// ids it hides as `hidden`.
 
 const lerp = (a, b, t) => a + (b - a) * t
 
@@ -47,24 +46,23 @@ export function pointAtFraction(points, f) {
   return { x: last[0], y: last[1] }
 }
 
-// Override squad positions that follow a drawn path for this phase.
-function applyPaths(squads, phasePaths, e) {
-  if (!phasePaths) return squads
-  const out = { ...squads }
-  for (const sid of Object.keys(phasePaths)) {
-    const p = pointAtFraction(phasePaths[sid], e)
-    if (p) out[sid] = p
+// Override positions of pills that follow a drawn path for this phase.
+function applyPaths(pos, phasePaths, e) {
+  if (!phasePaths) return pos
+  const out = { ...pos }
+  for (const id of Object.keys(phasePaths)) {
+    const p = pointAtFraction(phasePaths[id], e)
+    if (p) out[id] = p
   }
   return out
 }
 
-// Live board -> the Start frame in the same shape as a phase board.
-export function startFrame(placedSquads, markers) {
+// Live board -> the Start frame: every positioned item's { x, y }.
+export function startFrame(items) {
   return {
-    squads: Object.fromEntries(
-      placedSquads.map((q) => [q.id, { x: q.token.x, y: q.token.y }])
-    ),
-    markers: Object.fromEntries(markers.map((m) => [m.id, { x: m.x, y: m.y }]))
+    pos: Object.fromEntries(
+      items.filter((it) => it.x != null).map((it) => [it.id, { x: it.x, y: it.y }])
+    )
   }
 }
 
@@ -110,85 +108,46 @@ function blend(from, to, e) {
   return out
 }
 
-const hiddenOf = (board) => ({
-  hiddenDrawings: new Set(board?.hiddenDrawings || []),
-  hiddenNotes: new Set(board?.hiddenNotes || []),
-  hiddenMarkers: new Set(board?.hiddenMarkers || []),
-  hiddenSquads: new Set(board?.hiddenSquads || [])
+const NONE = new Set()
+const frame = (pos, phaseIndex, phase) => ({
+  pos,
+  phaseIndex,
+  hidden: phase ? new Set(phase.hidden || []) : NONE
 })
-const EMPTY_HIDDEN = {
-  hiddenDrawings: new Set(),
-  hiddenNotes: new Set(),
-  hiddenMarkers: new Set(),
-  hiddenSquads: new Set()
-}
 
 // Interpolated board at time `t` (ms). `start` is the Start frame.
-// `pathPolys` (optional) = { [phaseId]: { [squadId]: number[] } } — a resolved
-// polyline a squad walks during that phase instead of a straight lerp.
-// Returns { squads, markers, fromSquads, phaseIndex, hiddenDrawings, hiddenNotes,
-//           hiddenMarkers, hiddenSquads }. `fromSquads` = the source positions of
-// the phase currently animating (for motion trails).
+// `pathPolys` (optional) = { [phaseId]: { [pillId]: number[] } } — a resolved
+// polyline a pill walks during that phase instead of a straight lerp.
+// Returns { pos, phaseIndex, hidden: Set<itemId> }.
 export function frameAt(start, phases, t, pathPolys) {
-  if (!phases.length) return { ...start, fromSquads: {}, phaseIndex: -1, ...EMPTY_HIDDEN }
-  if (t <= 0) {
-    return {
-      squads: { ...start.squads },
-      markers: { ...start.markers },
-      fromSquads: { ...start.squads },
-      phaseIndex: 0,
-      ...EMPTY_HIDDEN
-    }
-  }
+  if (!phases.length) return frame({ ...start.pos }, -1, null)
+  if (t <= 0) return frame({ ...start.pos }, 0, null)
 
   let clock = 0
-  let from = start
+  let from = start.pos
   for (let i = 0; i < phases.length; i++) {
-    const dur = Math.max(0, phases[i].duration || 0)
-    const hold = Math.max(0, phases[i].hold || 0)
-    const to = phases[i].board || { squads: {}, markers: {} }
-    const phasePaths = pathPolys?.[phases[i].id] || null
+    const ph = phases[i]
+    const dur = Math.max(0, ph.duration || 0)
+    const hold = Math.max(0, ph.hold || 0)
+    const to = ph.pos || {}
+    const paths = pathPolys?.[ph.id] || null
 
     if (t < clock + dur || (dur === 0 && t <= clock)) {
       const raw = dur > 0 ? Math.min(1, Math.max(0, (t - clock) / dur)) : 1
-      const e = easingFn(phases[i].easing)(raw)
-      return {
-        squads: applyPaths(blend(from.squads, to.squads, e), phasePaths, e),
-        markers: blend(from.markers, to.markers, e),
-        fromSquads: { ...from.squads },
-        phaseIndex: i,
-        ...hiddenOf(to)
-      }
+      const e = easingFn(ph.easing)(raw)
+      return frame(applyPaths(blend(from, to, e), paths, e), i, ph)
     }
     clock += dur
     // `<=` so the exact arrival moment (holds default to 0) rests on this phase
     // rather than starting the next transition at e=0 (which would show the next
     // phase's visibility while positions haven't moved yet).
-    if (t <= clock + hold) {
-      return {
-        squads: applyPaths({ ...to.squads }, phasePaths, 1),
-        markers: { ...to.markers },
-        fromSquads: { ...from.squads },
-        phaseIndex: i,
-        ...hiddenOf(to)
-      }
-    }
+    if (t <= clock + hold) return frame(applyPaths({ ...to }, paths, 1), i, ph)
     clock += hold
-    // a path-following squad ends the phase at the path's end, so the next
-    // phase starts from there
-    from = phasePaths
-      ? { ...to, squads: applyPaths({ ...to.squads }, phasePaths, 1) }
-      : to
+    // a path-following pill ends the phase at the path's end, so the next phase
+    // starts from there
+    from = applyPaths({ ...to }, paths, 1)
   }
   // past the end -> rest on the last phase
-  const lastPhase = phases[phases.length - 1]
-  const last = lastPhase.board || { squads: {}, markers: {} }
-  const lastPaths = pathPolys?.[lastPhase.id] || null
-  return {
-    squads: applyPaths({ ...last.squads }, lastPaths, 1),
-    markers: { ...last.markers },
-    fromSquads: { ...from.squads },
-    phaseIndex: phases.length - 1,
-    ...hiddenOf(last)
-  }
+  const last = phases[phases.length - 1]
+  return frame(applyPaths({ ...(last.pos || {}) }, pathPolys?.[last.id], 1), phases.length - 1, last)
 }

@@ -54,50 +54,44 @@ export const TOOL_KEYS = {
 const SHORTCUTS = [
   ...Object.entries(TOOL_KEYS).map(([k, [, label]]) => [k.toUpperCase(), label]),
   ['Del', 'Delete selection'],
-  ['Ctrl D', 'Duplicate selected drawing'],
-  ['[ / ]', 'Drawing back / forward'],
+  ['Ctrl D', 'Duplicate selection'],
+  ['[ / ]', 'Send back / bring forward'],
   ['Esc', 'Back to select'],
   ['Ctrl 0', 'Reset zoom']
 ]
 
 // The single toolbar that lives in the top bar (BattleMap portals it there).
 // Purely presentational — every action comes in as a prop.
+const CLEARABLE = [
+  ['pill', 'Clear teams', 'Remove all team markers from the map?'],
+  ['marker', 'Clear markers'],
+  ['drawing', 'Clear drawings']
+]
+
 export default function CanvasToolbar({
   editLayout,
   tool,
   setTool,
   isShapeTool,
-  shapePalette,
-  setShapePalette,
-  markerPalette,
-  setMarkerPalette,
-  clearMenu,
-  setClearMenu,
-  shortcutsOpen,
-  setShortcutsOpen,
+  menu, // which dropdown is open: 'shape' | 'marker' | 'clear' | 'keys' | null
+  setMenu,
   phasesOpen,
-  boardCount,
-  markerCount,
-  drawingCount,
+  counts, // { pill, marker, drawing } — what "Clear" can remove
   drawColor,
   setDrawColor,
   drawWidth,
   setDrawWidth,
   zoomPct,
-  addMarker,
-  addNote,
-  addTimer,
-  centerLogical,
+  onAdd, // (type, extra) — marker / note / timer at the view centre
+  onClear, // (type)
   togglePhases,
   toggleEditLayout,
-  clearTokens,
-  clearMarkers,
-  clearDrawings,
   zoomBy,
   zoomTo,
   fit,
   onExportPng
 }) {
+  const toggle = (m) => setMenu((v) => (v === m ? null : m))
   return (
     <div className="canvas-toolbar">
       {!editLayout && (
@@ -133,16 +127,13 @@ export default function CanvasToolbar({
             </button>
             <div className="ctb-menu">
               <button
-                className={'dock-btn' + (isShapeTool || shapePalette ? ' on' : '')}
-                onClick={() => {
-                  setShapePalette((v) => !v)
-                  setMarkerPalette(false)
-                }}
+                className={'dock-btn' + (isShapeTool || menu === 'shape' ? ' on' : '')}
+                onClick={() => toggle('shape')}
                 title="Shapes — rectangle (R), ellipse (C), triangle (T), line (L)"
               >
                 <IconShapes />
               </button>
-              {shapePalette && (
+              {menu === 'shape' && (
                 <div className="ctb-drop">
                   {SHAPE_TOOLS.map((s) => {
                     const Icon = SHAPE_ICON[s]
@@ -152,7 +143,7 @@ export default function CanvasToolbar({
                         className={'ctb-drop-item' + (tool === s ? ' on' : '')}
                         onClick={() => {
                           setTool(s)
-                          setShapePalette(false)
+                          setMenu(null)
                         }}
                       >
                         <Icon />
@@ -177,24 +168,21 @@ export default function CanvasToolbar({
           <div className="ctb-group">
             <div className="ctb-menu">
               <button
-                className={'dock-btn' + (markerPalette ? ' on' : '')}
-                onClick={() => {
-                  setMarkerPalette((v) => !v)
-                  setShapePalette(false)
-                }}
+                className={'dock-btn' + (menu === 'marker' ? ' on' : '')}
+                onClick={() => toggle('marker')}
                 title="Objective markers"
               >
                 <IconFlag />
               </button>
-              {markerPalette && (
+              {menu === 'marker' && (
                 <div className="ctb-drop">
                   {MARKER_KIND_LIST.map((k) => (
                     <button
                       key={k}
                       className="ctb-drop-item"
                       onClick={() => {
-                        addMarker(k, centerLogical())
-                        setMarkerPalette(false)
+                        onAdd('marker', { kind: k })
+                        setMenu(null)
                       }}
                     >
                       <span className="mk-dot" style={{ background: MARKER_KINDS[k].color }} />
@@ -204,10 +192,10 @@ export default function CanvasToolbar({
                 </div>
               )}
             </div>
-            <button className="dock-btn" onClick={() => addNote(centerLogical())} title="Add note">
+            <button className="dock-btn" onClick={() => onAdd('note')} title="Add note">
               <IconNote />
             </button>
-            <button className="dock-btn" onClick={() => addTimer(centerLogical())} title="Add timer">
+            <button className="dock-btn" onClick={() => onAdd('timer')} title="Add timer">
               <IconClock />
             </button>
           </div>
@@ -229,52 +217,31 @@ export default function CanvasToolbar({
         </>
       )}
 
-      {!editLayout && (boardCount > 0 || markerCount > 0 || drawingCount > 0) && (
+      {!editLayout && CLEARABLE.some(([t]) => counts[t] > 0) && (
         <>
           <span className="ctb-div" />
           <div className="ctb-menu">
             <button
-              className={'dock-btn' + (clearMenu ? ' on' : '')}
-              onClick={() => setClearMenu((v) => !v)}
+              className={'dock-btn' + (menu === 'clear' ? ' on' : '')}
+              onClick={() => toggle('clear')}
               title="Clear items"
             >
               <IconTrash />
             </button>
-            {clearMenu && (
+            {menu === 'clear' && (
               <div className="ctb-drop ctb-drop--right">
-                {boardCount > 0 && (
+                {CLEARABLE.filter(([t]) => counts[t] > 0).map(([t, label, ask]) => (
                   <button
+                    key={t}
                     className="ctb-drop-item"
                     onClick={() => {
-                      if (confirm('Remove all team markers from the map?')) clearTokens()
-                      setClearMenu(false)
+                      if (!ask || confirm(ask)) onClear(t)
+                      setMenu(null)
                     }}
                   >
-                    Clear teams
+                    {label}
                   </button>
-                )}
-                {markerCount > 0 && (
-                  <button
-                    className="ctb-drop-item"
-                    onClick={() => {
-                      clearMarkers()
-                      setClearMenu(false)
-                    }}
-                  >
-                    Clear markers
-                  </button>
-                )}
-                {drawingCount > 0 && (
-                  <button
-                    className="ctb-drop-item"
-                    onClick={() => {
-                      clearDrawings()
-                      setClearMenu(false)
-                    }}
-                  >
-                    Clear drawings
-                  </button>
-                )}
+                ))}
               </div>
             )}
           </div>
@@ -331,13 +298,13 @@ export default function CanvasToolbar({
           </button>
           <div className="ctb-menu">
             <button
-              className={'dock-btn' + (shortcutsOpen ? ' on' : '')}
-              onClick={() => setShortcutsOpen((v) => !v)}
+              className={'dock-btn' + (menu === 'keys' ? ' on' : '')}
+              onClick={() => toggle('keys')}
               title="Keyboard shortcuts"
             >
               <IconHelp />
             </button>
-            {shortcutsOpen && (
+            {menu === 'keys' && (
               <div className="ctb-drop ctb-drop--right shortcuts-pop">
                 <div className="shortcuts-title">Keyboard shortcuts</div>
                 {SHORTCUTS.map(([key, label]) => (

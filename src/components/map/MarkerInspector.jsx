@@ -2,8 +2,8 @@ import { useStore } from '../../store/useStore.js'
 import { MARKER_KINDS } from '../../lib/tacticalDefs.js'
 
 export default function MarkerInspector({ marker, onClose }) {
-  const updateMarker = useStore((s) => s.updateMarker)
-  const removeMarker = useStore((s) => s.removeMarker)
+  const updateMarker = useStore((s) => s.updateItem)
+  const removeMarker = useStore((s) => s.removeItem)
   const def = MARKER_KINDS[marker.kind] ?? MARKER_KINDS.attack
 
   return (

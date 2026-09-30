@@ -9,13 +9,10 @@ import {
   easingFn
 } from './playback.js'
 
-const start = {
-  squads: { a: { x: 0, y: 0 }, b: { x: 100, y: 0 } },
-  markers: {}
-}
+const start = { pos: { a: { x: 0, y: 0 }, b: { x: 100, y: 0 } } }
 const phases = [
-  { id: 'p1', duration: 1000, hold: 0, board: { squads: { a: { x: 10, y: 0 }, b: { x: 100, y: 0 } }, markers: {} } },
-  { id: 'p2', duration: 1000, hold: 500, board: { squads: { a: { x: 10, y: 0 }, b: { x: 0, y: 0 } }, markers: {} } }
+  { id: 'p1', duration: 1000, hold: 0, pos: { a: { x: 10, y: 0 }, b: { x: 100, y: 0 } }, hidden: [] },
+  { id: 'p2', duration: 1000, hold: 500, pos: { a: { x: 10, y: 0 }, b: { x: 0, y: 0 } }, hidden: [] }
 ]
 
 describe('timeline math', () => {
@@ -39,105 +36,72 @@ describe('timeline math', () => {
 })
 
 describe('frameAt', () => {
+  const ph = (id, pos = {}, hidden = [], extra = {}) => ({ id, duration: 1000, hold: 0, pos, hidden, ...extra })
+
   it('t=0 returns the Start board', () => {
     const f = frameAt(start, phases, 0)
-    expect(f.squads.a).toEqual({ x: 0, y: 0 })
+    expect(f.pos.a).toEqual({ x: 0, y: 0 })
     expect(f.phaseIndex).toBe(0)
   })
 
   it('mid first transition interpolates (eased)', () => {
     const f = frameAt(start, phases, 500) // eased(0.5) = 0.5
-    expect(f.squads.a.x).toBeCloseTo(5)
-    expect(f.squads.b.x).toBe(100) // unchanged in p1
+    expect(f.pos.a.x).toBeCloseTo(5)
+    expect(f.pos.b.x).toBe(100) // unchanged in p1
   })
 
   it('at the arrival of phase 1 the board equals p1', () => {
-    const f = frameAt(start, phases, 1000)
-    expect(f.squads.a).toEqual({ x: 10, y: 0 })
+    expect(frameAt(start, phases, 1000).pos.a).toEqual({ x: 10, y: 0 })
   })
 
   it('landing exactly on a keyframe rests on THAT phase, not the next transition', () => {
     // t = phaseArrivalTime(phases, 0) — where selectPhase parks you.
-    const p = [
-      { id: 'p1', duration: 1000, hold: 0, board: { squads: {}, markers: {}, hiddenDrawings: ['a'] } },
-      { id: 'p2', duration: 1000, hold: 0, board: { squads: {}, markers: {}, hiddenDrawings: ['b'] } }
-    ]
-    const f = frameAt(start, p, 1000)
+    const f = frameAt(start, [ph('p1', {}, ['a']), ph('p2', {}, ['b'])], 1000)
     expect(f.phaseIndex).toBe(0)
-    expect(f.hiddenDrawings.has('a')).toBe(true)
-    expect(f.hiddenDrawings.has('b')).toBe(false)
+    expect(f.hidden.has('a')).toBe(true)
+    expect(f.hidden.has('b')).toBe(false)
   })
 
-  it('exposes hiddenMarkers / hiddenSquads sets', () => {
-    const p = [
-      {
-        id: 'p1',
-        duration: 1000,
-        hold: 0,
-        board: { squads: {}, markers: {}, hiddenMarkers: ['m1'], hiddenSquads: ['s1'] }
-      }
-    ]
-    const f = frameAt(start, p, 500)
-    expect(f.hiddenMarkers.has('m1')).toBe(true)
-    expect(f.hiddenSquads.has('s1')).toBe(true)
-    // empty at Start
-    expect(frameAt(start, p, 0).hiddenMarkers.size).toBe(0)
-    expect(frameAt(start, p, 0).hiddenSquads.size).toBe(0)
+  it('exposes the hidden set (empty at Start and with no phases)', () => {
+    const p = [ph('p1', {}, ['m1', 's1'])]
+    expect(frameAt(start, p, 500).hidden.has('m1')).toBe(true)
+    expect(frameAt(start, p, 9999).hidden.has('s1')).toBe(true)
+    expect(frameAt(start, p, 0).hidden.size).toBe(0)
+    expect(frameAt(start, [], 500).hidden.size).toBe(0)
   })
 
   it('during a hold the board rests on that phase', () => {
     const f = frameAt(start, phases, 2200) // 2000 arrival + into the 500ms hold
-    expect(f.squads.b).toEqual({ x: 0, y: 0 })
+    expect(f.pos.b).toEqual({ x: 0, y: 0 })
     expect(f.phaseIndex).toBe(1)
   })
 
   it('past the end rests on the last phase', () => {
-    const f = frameAt(start, phases, 99999)
-    expect(f.squads.b).toEqual({ x: 0, y: 0 })
+    expect(frameAt(start, phases, 99999).pos.b).toEqual({ x: 0, y: 0 })
   })
 
   it('with no phases returns Start', () => {
     const f = frameAt(start, [], 500)
-    expect(f.squads.a).toEqual({ x: 0, y: 0 })
+    expect(f.pos.a).toEqual({ x: 0, y: 0 })
     expect(f.phaseIndex).toBe(-1)
   })
 
-  it('exposes per-phase hidden sets (empty at Start)', () => {
-    const p = [
-      {
-        id: 'x',
-        duration: 1000,
-        hold: 0,
-        board: { squads: {}, markers: {}, hiddenDrawings: ['d1'], hiddenNotes: ['n1'] }
-      }
-    ]
-    expect(frameAt(start, p, 0).hiddenDrawings.size).toBe(0)
-    const mid = frameAt(start, p, 500)
-    expect(mid.hiddenDrawings.has('d1')).toBe(true)
-    expect(mid.hiddenNotes.has('n1')).toBe(true)
-    expect(frameAt(start, p, 9999).hiddenDrawings.has('d1')).toBe(true)
-  })
-
-  it('a squad only in the target pops to its target position', () => {
-    const p = [{ id: 'x', duration: 1000, hold: 0, board: { squads: { c: { x: 50, y: 50 } }, markers: {} } }]
-    const f = frameAt(start, p, 400)
-    expect(f.squads.c).toEqual({ x: 50, y: 50 })
+  it('an item only in the target pops to its target position', () => {
+    expect(frameAt(start, [ph('x', { c: { x: 50, y: 50 } })], 400).pos.c).toEqual({ x: 50, y: 50 })
   })
 
   it('honours a per-phase easing', () => {
-    const p = [{ id: 'x', duration: 1000, hold: 0, easing: 'linear', board: { squads: { a: { x: 100, y: 0 } }, markers: {} } }]
+    const p = [ph('x', { a: { x: 100, y: 0 } }, [], { easing: 'linear' })]
     // linear: quarter time -> quarter distance
-    expect(frameAt(start, p, 250).squads.a.x).toBeCloseTo(25)
+    expect(frameAt(start, p, 250).pos.a.x).toBeCloseTo(25)
   })
 
-  it('a squad follows an assigned drawn path along its arc length', () => {
-    const p = [{ id: 'x', duration: 1000, hold: 0, board: { squads: {}, markers: {} } }]
+  it('a pill follows an assigned drawn path along its arc length', () => {
     // L-shaped path: (0,0) -> (0,100) -> (100,100), total length 200
     const polys = { x: { a: [0, 0, 0, 100, 100, 100] } }
-    const half = frameAt(start, p, 500, polys) // eased(0.5)=0.5 -> 100 along -> corner
-    expect(half.squads.a).toEqual({ x: 0, y: 100 })
-    const end = frameAt(start, p, 1200, polys) // past end -> path end
-    expect(end.squads.a).toEqual({ x: 100, y: 100 })
+    const p = [ph('x')]
+    expect(frameAt(start, p, 500, polys).pos.a).toEqual({ x: 0, y: 100 }) // eased 0.5 -> corner
+    expect(frameAt(start, p, 1200, polys).pos.a).toEqual({ x: 100, y: 100 }) // past end
   })
 })
 
@@ -165,11 +129,12 @@ describe('easingFn', () => {
 })
 
 describe('startFrame', () => {
-  it('builds squad/marker dicts from live state', () => {
-    const sf = startFrame(
-      [{ id: 'a', token: { x: 1, y: 2 } }],
-      [{ id: 'm', x: 3, y: 4 }]
-    )
-    expect(sf).toEqual({ squads: { a: { x: 1, y: 2 } }, markers: { m: { x: 3, y: 4 } } })
+  it('keys every positioned item by id (drawings have no x/y)', () => {
+    const sf = startFrame([
+      { id: 'a', type: 'pill', x: 1, y: 2 },
+      { id: 'm', type: 'marker', x: 3, y: 4 },
+      { id: 'd', type: 'drawing', points: [0, 0, 1, 1] }
+    ])
+    expect(sf).toEqual({ pos: { a: { x: 1, y: 2 }, m: { x: 3, y: 4 } } })
   })
 })

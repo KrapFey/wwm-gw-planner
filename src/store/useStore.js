@@ -11,7 +11,7 @@ import {
   DEFAULT_SQUAD_SIZE
 } from '../lib/schema'
 import { MAP_W, MAP_H } from '../lib/mapLayout'
-import { phaseArrivalTime } from '../lib/playback'
+import { phaseArrivalTime, startFrame } from '../lib/playback'
 import { DEFAULT_FIXTURES } from '../data/mapPreset'
 import { newId } from '../lib/ids'
 
@@ -323,8 +323,7 @@ const creator = (set, get) => ({
         name: patch.name ?? '',
         lane: patch.lane ?? 'Unassigned',
         targetSize: patch.targetSize ?? s.config.defaultSquadSize ?? DEFAULT_SQUAD_SIZE,
-        color: patch.color ?? squadColorForIndex(count, side),
-        token: null
+        color: patch.color ?? squadColorForIndex(count, side)
       })
     }),
 
@@ -347,8 +346,7 @@ const creator = (set, get) => ({
         ...src,
         id: nid,
         name: src.name ? `${src.name} copy` : '',
-        color: squadColorForIndex(count, src.side),
-        token: null
+        color: squadColorForIndex(count, src.side)
       })
       for (const p of s.players.filter((p) => p.squadId === id)) {
         s.players.push({ id: newId('pl'), side: p.side, role: p.role, squadId: nid })
@@ -359,11 +357,7 @@ const creator = (set, get) => ({
     commit(set, get, (s) => {
       s.squads = s.squads.filter((q) => q.id !== id)
       s.players = s.players.filter((p) => p.squadId !== id)
-      for (const p of s.phases) {
-        delete p.board.squads[id]
-        delete p.paths[id]
-        pullFrom(p.board, 'hiddenSquads', id)
-      }
+      purge(s, [id]) // its pill
     }),
 
   // ---- players (role slots) ------------------------------------------------
@@ -399,182 +393,100 @@ const creator = (set, get) => ({
       }
     }),
 
-  clearTokens: () =>
-    commit(set, get, (s) => {
-      for (const q of s.squads) q.token = null
-    }),
+  // ---- map items: pills, markers, drawings, notes, timers ---------------
+  // One list for everything on the map (see schema.js). Array order is the
+  // draw order within a type.
 
-  // ---- tactical: objective markers -------------------------------------
-  addMarker: (kind, pos) =>
+  // Add an item; returns its id. Added while a phase is being edited, it
+  // belongs to that phase (hidden in the others).
+  addItem: (item) => {
+    const id = item.id ?? newId(ID_PREFIX[item.type] ?? 'it')
     commit(set, get, (s) => {
-      const id = newId('mk')
-      s.markers.push({ id, kind, x: Math.round(pos.x), y: Math.round(pos.y) })
-      // Added while editing a phase -> it belongs to that phase: hide it in the
-      // others so it doesn't silently appear across the whole sequence.
-      scopeToPhase(s, get().playback, 'hiddenMarkers', id)
-    }),
-  updateMarker: (id, patch) =>
+      s.items.push(roundXY({ ...item, id }))
+      scopeToPhase(s, get().playback, id)
+    })
+    return id
+  },
+  updateItem: (id, patch) =>
     commit(set, get, (s) => {
-      const i = s.markers.findIndex((x) => x.id === id)
+      const i = s.items.findIndex((x) => x.id === id)
       if (i === -1) return
-      Object.assign(s.markers[i], patch)
-      // a moved marker jumps to the top of the marker stack
-      if ('x' in patch || 'y' in patch) s.markers.push(s.markers.splice(i, 1)[0])
+      Object.assign(s.items[i], roundXY(patch))
+      // a moved item comes to the front of its type
+      if ('x' in patch || 'y' in patch) s.items.push(s.items.splice(i, 1)[0])
     }),
-  removeMarker: (id) =>
-    commit(set, get, (s) => {
-      s.markers = s.markers.filter((m) => m.id !== id)
-      for (const p of s.phases) {
-        delete p.board.markers[id]
-        pullFrom(p.board, 'hiddenMarkers', id)
-      }
-    }),
-  clearMarkers: () => commit(set, get, (s) => { s.markers = [] }),
+  removeItem: (id) => commit(set, get, (s) => purge(s, [id])),
+  clearItems: (type) =>
+    commit(set, get, (s) => purge(s, s.items.filter((i) => i.type === type).map((i) => i.id))),
 
-  // ---- tactical: freehand / arrows -----------------------------------
-  addDrawing: (drawing) =>
+  // Copy an item right after its source, nudged so it's visible; returns the
+  // new id. Pills are one-per-team, so they don't duplicate.
+  duplicateItem: (id) => {
+    const src = get().strategy.items.find((i) => i.id === id)
+    if (!src || src.type === 'pill') return null
+    const nid = newId(ID_PREFIX[src.type] ?? 'it')
+    const copy = src.points
+      ? { ...src, id: nid, points: src.points.map((v) => v + 14) }
+      : { ...src, id: nid, x: src.x + 14, y: src.y + 14 }
     commit(set, get, (s) => {
-      s.drawings.push({ ...drawing, id: newId('dr') })
-    }),
-  updateDrawing: (id, patch) =>
-    commit(set, get, (s) => {
-      const d = s.drawings.find((x) => x.id === id)
-      if (d) Object.assign(d, patch)
-    }),
-  // Copy a drawing, nudged so the duplicate is visible next to its source.
-  // Returns the new id (synchronously, before commit()'s draft is applied) so
-  // the caller can select it right away.
-  duplicateDrawing: (id) => {
-    const src = get().strategy.drawings.find((d) => d.id === id)
-    if (!src) return null
-    const nid = newId('dr')
-    commit(set, get, (s) => {
-      const i = s.drawings.findIndex((d) => d.id === id)
-      if (i === -1) return
-      s.drawings.splice(i + 1, 0, {
-        ...src,
-        id: nid,
-        points: src.points.map((v) => v + 14)
-      })
+      s.items.splice(s.items.findIndex((i) => i.id === id) + 1, 0, copy)
     })
     return nid
   },
-  // Z-order: dir -1 sends a drawing back one slot, +1 brings it forward one
-  // (drawings render in array order, so "forward" = later in the array).
-  moveDrawing: (id, dir) =>
+
+  // Z-order: dir -1 sends an item behind the previous item of its type, +1 in
+  // front of the next one (each type draws on its own layer).
+  moveItem: (id, dir) =>
     commit(set, get, (s) => {
-      const i = s.drawings.findIndex((d) => d.id === id)
-      const j = i + dir
-      if (i === -1 || j < 0 || j >= s.drawings.length) return
-      const [d] = s.drawings.splice(i, 1)
-      s.drawings.splice(j, 0, d)
-    }),
-  removeDrawing: (id) =>
-    commit(set, get, (s) => {
-      s.drawings = s.drawings.filter((d) => d.id !== id)
-      for (const p of s.phases) {
-        for (const sid of Object.keys(p.paths || {})) {
-          if (p.paths[sid] === id) delete p.paths[sid]
-        }
-      }
-    }),
-  clearDrawings: () =>
-    commit(set, get, (s) => {
-      s.drawings = []
-      for (const p of s.phases) p.paths = {}
+      const i = s.items.findIndex((x) => x.id === id)
+      if (i === -1) return
+      let j = i + dir
+      while (j >= 0 && j < s.items.length && s.items[j].type !== s.items[i].type) j += dir
+      if (j < 0 || j >= s.items.length) return
+      ;[s.items[i], s.items[j]] = [s.items[j], s.items[i]]
     }),
 
-  // ---- tactical: sticky notes ---------------------------------------
-  addNote: (pos, patch = {}) =>
-    commit(set, get, (s) => {
-      s.notes.push({
-        id: newId('nt'),
-        x: Math.round(pos.x),
-        y: Math.round(pos.y),
-        text: '',
-        color: '#fde68a',
-        ...patch
-      })
-    }),
-  updateNote: (id, patch) =>
-    commit(set, get, (s) => {
-      const n = s.notes.find((x) => x.id === id)
-      if (n) Object.assign(n, patch)
-    }),
-  removeNote: (id) =>
-    commit(set, get, (s) => {
-      s.notes = s.notes.filter((n) => n.id !== id)
-    }),
+  // Board gestures. While a phase is being edited a drag writes that phase's
+  // keyframe and a delete hides the item in that phase (non-destructive);
+  // otherwise they change the live board.
+  dragItem: (id, pos) => {
+    const { playback: pb } = get()
+    if (pb.open && pb.phaseId) get().setPhasePos(pb.phaseId, id, pos)
+    else get().updateItem(id, pos)
+  },
+  removeFromBoard: (id) => {
+    const { playback: pb } = get()
+    if (pb.open && pb.phaseId) get().togglePhaseHidden(pb.phaseId, id)
+    else get().removeItem(id)
+  },
 
-  // ---- tactical: countdown timers ----------------------------------
-  addTimer: (pos, patch = {}) =>
-    commit(set, get, (s) => {
-      s.timers.push({
-        id: newId('tm'),
-        x: Math.round(pos.x),
-        y: Math.round(pos.y),
-        seconds: 60,
-        ...patch
-      })
-    }),
-  updateTimer: (id, patch) =>
-    commit(set, get, (s) => {
-      const t = s.timers.find((x) => x.id === id)
-      if (t) Object.assign(t, patch)
-    }),
-  removeTimer: (id) =>
-    commit(set, get, (s) => {
-      s.timers = s.timers.filter((t) => t.id !== id)
-    }),
-
-  // A team drops onto the map as a single pill token. `token.at` timestamps the
-  // last place/move so the newest pill renders on top.
-  setSquadToken: (id, pos) =>
-    commit(set, get, (s) => {
-      const q = s.squads.find((x) => x.id === id)
-      if (!q) return
-      const wasPlaced = !!q.token
-      q.token = pos ? { x: pos.x, y: pos.y, at: Date.now() } : null
-      // Dropping a fresh pill while editing a phase scopes it to that phase.
-      if (pos && !wasPlaced) scopeToPhase(s, get().playback, 'hiddenSquads', id)
-    }),
+  // A team drops onto the map as one pill (id = the team's id); dropping it
+  // again moves it.
+  placePill: (squadId, pos) => {
+    const s = get()
+    if (!s.strategy.squads.some((q) => q.id === squadId)) return
+    if (s.strategy.items.some((i) => i.id === squadId)) s.updateItem(squadId, pos)
+    else s.addItem({ id: squadId, type: 'pill', x: pos.x, y: pos.y })
+  },
 
   // ---- planning phases (keyframe animation) ---------------------------
-  // Add a phase after `sourceId` (or at the end). Its board is a copy of the
+  // Add a phase after `sourceId` (or at the end). It starts as a copy of the
   // source phase, or a snapshot of the live board when there's no source.
   addPhase: (sourceId = null) => {
-    const st = get()
-    const draft = structuredClone(st.strategy)
     const id = newId('ph')
-    const srcIdx = sourceId ? draft.phases.findIndex((p) => p.id === sourceId) : -1
-    const board =
-      srcIdx !== -1
-        ? structuredClone(draft.phases[srcIdx].board)
-        : {
-            squads: Object.fromEntries(
-              draft.squads
-                .filter((q) => q.token)
-                .map((q) => [q.id, { x: q.token.x, y: q.token.y }])
-            ),
-            markers: Object.fromEntries(draft.markers.map((m) => [m.id, { x: m.x, y: m.y }])),
-            hiddenDrawings: [],
-            hiddenNotes: [],
-            hiddenMarkers: [],
-            hiddenSquads: []
-          }
-    const phase = {
-      id,
-      name: `Phase ${draft.phases.length + 1}`,
-      duration: 2000,
-      hold: 0,
-      board,
-      paths: {}
-    }
-    draft.phases.splice(srcIdx === -1 ? draft.phases.length : srcIdx + 1, 0, phase)
-    draft.meta = { ...draft.meta, updatedAt: new Date().toISOString() }
-    set({
-      strategy: draft,
-      docs: { ...st.docs, [st.activeId]: draft }
+    commit(set, get, (s) => {
+      const srcIdx = sourceId ? s.phases.findIndex((p) => p.id === sourceId) : -1
+      const src = s.phases[srcIdx]
+      s.phases.splice(srcIdx === -1 ? s.phases.length : srcIdx + 1, 0, {
+        id,
+        name: `Phase ${s.phases.length + 1}`,
+        duration: 2000,
+        hold: 0,
+        easing: 'inout',
+        pos: src ? { ...src.pos } : startFrame(s.items).pos,
+        hidden: src ? [...src.hidden] : [],
+        paths: {}
+      })
     })
     get().selectPhase(id)
   },
@@ -588,29 +500,20 @@ const creator = (set, get) => ({
     }
   },
 
-  renamePhase: (id, name) =>
-    commit(set, get, (s) => {
-      const p = s.phases.find((x) => x.id === id)
-      if (p) p.name = name
-    }),
+  renamePhase: (id, name) => editPhase(set, get, id, (p) => (p.name = name)),
 
   setPhaseTiming: (id, patch) =>
-    commit(set, get, (s) => {
-      const p = s.phases.find((x) => x.id === id)
-      if (!p) return
+    editPhase(set, get, id, (p) => {
       if ('duration' in patch) p.duration = Math.max(0, Number(patch.duration) || 0)
       if ('hold' in patch) p.hold = Math.max(0, Number(patch.hold) || 0)
       if ('easing' in patch) p.easing = patch.easing
     }),
 
-  // Assign a drawing for a squad to travel along during this phase (null clears).
-  setPhasePath: (phaseId, squadId, drawingId) =>
-    commit(set, get, (s) => {
-      const p = s.phases.find((x) => x.id === phaseId)
-      if (!p) return
-      if (!p.paths) p.paths = {}
-      if (drawingId) p.paths[squadId] = drawingId
-      else delete p.paths[squadId]
+  // Assign a drawing for a pill to travel along during this phase (null clears).
+  setPhasePath: (phaseId, pillId, drawingId) =>
+    editPhase(set, get, phaseId, (p) => {
+      if (drawingId) p.paths[pillId] = drawingId
+      else delete p.paths[pillId]
     }),
 
   movePhase: (id, dir) =>
@@ -627,55 +530,56 @@ const creator = (set, get) => ({
       s.phases.splice(to, 0, p)
     }),
 
-  updatePhaseSquad: (phaseId, squadId, pos) =>
-    commit(set, get, (s) => {
-      const p = s.phases.find((x) => x.id === phaseId)
-      if (p) p.board.squads[squadId] = { x: Math.round(pos.x), y: Math.round(pos.y) }
+  // Where an item sits in one phase (a drag while that phase is being edited).
+  setPhasePos: (phaseId, itemId, pos) =>
+    editPhase(set, get, phaseId, (p) => {
+      p.pos[itemId] = { x: Math.round(pos.x), y: Math.round(pos.y) }
     }),
 
-  updatePhaseMarker: (phaseId, markerId, pos) =>
-    commit(set, get, (s) => {
-      const p = s.phases.find((x) => x.id === phaseId)
-      if (p) p.board.markers[markerId] = { x: Math.round(pos.x), y: Math.round(pos.y) }
-    }),
-
-  // kind: 'drawings' | 'notes' | 'markers' | 'squads'
-  togglePhaseHidden: (phaseId, kind, id) =>
-    commit(set, get, (s) => {
-      const p = s.phases.find((x) => x.id === phaseId)
-      if (!p) return
-      const key = HIDDEN_KEY[kind] || 'hiddenDrawings'
-      const list = p.board[key] || (p.board[key] = [])
-      const i = list.indexOf(id)
-      if (i === -1) list.push(id)
-      else list.splice(i, 1)
+  togglePhaseHidden: (phaseId, itemId) =>
+    editPhase(set, get, phaseId, (p) => {
+      const i = p.hidden.indexOf(itemId)
+      if (i === -1) p.hidden.push(itemId)
+      else p.hidden.splice(i, 1)
     })
 })
 
-const HIDDEN_KEY = {
-  drawings: 'hiddenDrawings',
-  notes: 'hiddenNotes',
-  markers: 'hiddenMarkers',
-  squads: 'hiddenSquads'
+const ID_PREFIX = { marker: 'mk', drawing: 'dr', note: 'nt', timer: 'tm' }
+
+const roundXY = (o) => ({
+  ...o,
+  ...('x' in o && { x: Math.round(o.x) }),
+  ...('y' in o && { y: Math.round(o.y) })
+})
+
+const editPhase = (set, get, id, fn) =>
+  commit(set, get, (s) => {
+    const p = s.phases.find((x) => x.id === id)
+    if (p) fn(p)
+  })
+
+// Delete items and every phase reference to them (keyframes, hides, paths that
+// either move that pill or follow that drawing).
+function purge(s, ids) {
+  if (!ids.length) return
+  const gone = new Set(ids)
+  s.items = s.items.filter((i) => !gone.has(i.id))
+  for (const p of s.phases) {
+    for (const id of gone) delete p.pos[id]
+    p.hidden = p.hidden.filter((id) => !gone.has(id))
+    for (const [pill, drawing] of Object.entries(p.paths)) {
+      if (gone.has(pill) || gone.has(drawing)) delete p.paths[pill]
+    }
+  }
 }
 
-// Remove `id` from board[key] if present (used when an entity is deleted).
-function pullFrom(board, key, id) {
-  const list = board[key]
-  if (!Array.isArray(list)) return
-  const i = list.indexOf(id)
-  if (i !== -1) list.splice(i, 1)
-}
-
-// When an entity is created while a phase is being edited, hide it in every
-// OTHER phase so it reads as belonging to just that phase. No-op at Start / when
-// the timeline is closed (both leave playback.phaseId null).
-function scopeToPhase(strategy, playback, key, id) {
+// An item created while a phase is being edited is hidden in every OTHER phase
+// so it reads as belonging to just that phase. No-op at Start / with the
+// timeline closed (both leave playback.phaseId null).
+function scopeToPhase(strategy, playback, id) {
   if (!playback?.phaseId) return
   for (const p of strategy.phases) {
-    if (p.id === playback.phaseId) continue
-    const list = p.board[key] || (p.board[key] = [])
-    if (!list.includes(id)) list.push(id)
+    if (p.id !== playback.phaseId && !p.hidden.includes(id)) p.hidden.push(id)
   }
 }
 
@@ -694,8 +598,9 @@ export const useStore = create(
       // v3: strategy library. v4: two roster panels. v5: dropped dead
       // player.name/weapons + squad.leaderId. v7: teams grouped into
       // Attack/Defence + squad.category. v8: squad.name back as an optional
-      // rename (blank = the derived "Att N" default).
-      version: 8,
+      // rename (blank = the derived "Att N" default). v9: map entities folded
+      // into strategy.items; phases keyframe items (pos / hidden).
+      version: 9,
       storage: createJSONStorage(() => appStorage),
       partialize: (state) => ({
         docs: state.docs,

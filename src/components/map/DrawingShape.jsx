@@ -11,8 +11,8 @@ import { SHAPE_TOOLS, withAlpha, curvedArrowAnchors } from '../../lib/tacticalDe
 // in-progress stroke (non-interactive). In select mode a drawing can be selected
 // and dragged; double-click removes it.
 export default function DrawingShape({ drawing, live = false, selected = false, onSelect }) {
-  const removeDrawing = useStore((s) => s.removeDrawing)
-  const updateDrawing = useStore((s) => s.updateDrawing)
+  const removeFromBoard = useStore((s) => s.removeFromBoard)
+  const updateDrawing = useStore((s) => s.updateItem)
   // live apex position while the curved-arrow handle is being dragged
   const [dragApex, setDragApex] = useState(null)
 
@@ -50,8 +50,8 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
           e.cancelBubble = true
           onSelect?.(drawing.id)
         },
-    onDblClick: live ? undefined : () => removeDrawing(drawing.id),
-    onDblTap: live ? undefined : () => removeDrawing(drawing.id),
+    onDblClick: live ? undefined : () => removeFromBoard(drawing.id),
+    onDblTap: live ? undefined : () => removeFromBoard(drawing.id),
     onDragStart: (e) => (e.cancelBubble = true),
     onDragEnd: onDragEndFold
   }
