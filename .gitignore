@@ -25,3 +25,6 @@ npm-debug.log*
 public/__seed.html
 
 TODO.md
+
+# knowledge graph (generated locally by graphify)
+graphify-out
