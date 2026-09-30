@@ -6,9 +6,26 @@ import UpdateToast from './components/UpdateToast.jsx'
 import { useStore, doUndo, doRedo } from './store/useStore.js'
 import { downloadStrategy } from './lib/strategyFile.js'
 
+// keep in step with the drawer breakpoint in global.css
+const drawerMode = () => window.matchMedia('(max-width: 1180px)').matches
+
 export default function App() {
   const panels = useStore((s) => s.ui?.panels) ?? { ally: true, enemy: true }
   const togglePanel = useStore((s) => s.togglePanel)
+
+  // Rosters are overlay drawers on narrow screens: open the map first, and
+  // only ever one drawer at a time.
+  useEffect(() => {
+    if (!drawerMode()) return
+    const p = useStore.getState().ui.panels
+    if (p.ally) togglePanel('ally')
+    if (p.enemy) togglePanel('enemy')
+  }, [togglePanel])
+  const toggleDrawer = (side) => {
+    const other = side === 'ally' ? 'enemy' : 'ally'
+    if (!panels[side] && panels[other] && drawerMode()) togglePanel(other)
+    togglePanel(side)
+  }
 
   useEffect(() => {
     const onKey = (e) => {
@@ -46,14 +63,14 @@ export default function App() {
         <div className="map-pane">
           <button
             className="roster-edge left"
-            onClick={() => togglePanel('ally')}
+            onClick={() => toggleDrawer('ally')}
             title={panels.ally ? 'Hide our roster' : 'Show our roster'}
           >
             {panels.ally ? '‹' : '›'}
           </button>
           <button
             className="roster-edge right"
-            onClick={() => togglePanel('enemy')}
+            onClick={() => toggleDrawer('enemy')}
             title={panels.enemy ? 'Hide enemy roster' : 'Show enemy roster'}
           >
             {panels.enemy ? '›' : '‹'}
