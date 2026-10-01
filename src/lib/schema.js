@@ -102,6 +102,9 @@ export function emptyStrategy() {
 }
 
 const num = (v, fallback) => (Number.isFinite(+v) ? +v : fallback)
+// Colours end up in canvas fills and inline CSS; a document from a share link
+// or file is untrusted, so only plain hex colours get through.
+const hex = (c, fallback) => (/^#[\da-f]{3,8}$/i.test(c) ? c : fallback)
 const pointDict = (d) => {
   const out = {}
   for (const [id, p] of Object.entries(d || {})) {
@@ -175,7 +178,7 @@ export function migrateStrategy(input) {
         name: typeof q.name === 'string' ? q.name : '',
         lane: q.lane ?? 'Unassigned',
         targetSize: Number(q.targetSize) || DEFAULT_SQUAD_SIZE,
-        color: q.color ?? squadColorForIndex(0, q.side)
+        color: hex(q.color, squadColorForIndex(0, q.side))
       }))
     : []
   merged.players = Array.isArray(input.players)
@@ -196,10 +199,14 @@ export function migrateStrategy(input) {
   merged.players = merged.players.filter((p) => p.squadId && squadIds.has(p.squadId))
 
   // Items: keep known types with an id; a pill must still have its team.
-  merged.items = (Array.isArray(input.items) ? input.items : itemsFromV1(input)).filter(
-    (it) =>
-      it?.id && ITEM_TYPES.includes(it.type) && (it.type !== 'pill' || squadIds.has(it.id))
-  )
+  merged.items = (Array.isArray(input.items) ? input.items : itemsFromV1(input))
+    .filter(
+      (it) =>
+        it?.id && ITEM_TYPES.includes(it.type) && (it.type !== 'pill' || squadIds.has(it.id))
+    )
+    .map((it) =>
+      'color' in it ? { ...it, color: hex(it.color, it.type === 'note' ? '#fde68a' : '#facc15') } : it
+    )
 
   return merged
 }

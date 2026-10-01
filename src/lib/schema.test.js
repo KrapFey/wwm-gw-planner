@@ -144,3 +144,18 @@ describe('migrateStrategy', () => {
     expect(out.phases[0]).toMatchObject({ pos: { q1: { x: 5, y: 5 } }, hidden: ['m'] })
   })
 })
+
+describe('untrusted input', () => {
+  it('only plain hex colours survive migration', () => {
+    const out = migrateStrategy({
+      squads: [{ id: 'q1', side: 'ally', targetSize: 5, color: 'url(https://evil.example/x)' }],
+      items: [
+        { id: 'n', type: 'note', x: 0, y: 0, text: '', color: 'red;background:url(x)' },
+        { id: 'd', type: 'drawing', tool: 'pen', color: '#12ab34', width: 3, points: [] }
+      ]
+    })
+    expect(out.squads[0].color).toMatch(/^#[\da-f]{6}$/i)
+    expect(out.items[0].color).toBe('#fde68a')
+    expect(out.items[1].color).toBe('#12ab34')
+  })
+})

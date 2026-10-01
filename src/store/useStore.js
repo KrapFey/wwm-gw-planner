@@ -563,10 +563,12 @@ const creator = (set, get) => ({
 
 const ID_PREFIX = { marker: 'mk', drawing: 'dr', note: 'nt', timer: 'tm' }
 
+// whole map pixels are plenty; keeps documents + share links small
 const roundXY = (o) => ({
   ...o,
   ...('x' in o && { x: Math.round(o.x) }),
-  ...('y' in o && { y: Math.round(o.y) })
+  ...('y' in o && { y: Math.round(o.y) }),
+  ...(Array.isArray(o.points) && { points: o.points.map(Math.round) })
 })
 
 const editPhase = (set, get, id, fn) =>

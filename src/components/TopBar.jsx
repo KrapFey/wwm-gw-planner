@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore, useTemporal, doUndo, doRedo, subscribeSaved } from '../store/useStore.js'
 import { downloadStrategy, readStrategyFile } from '../lib/strategyFile.js'
+import { shareUrl } from '../lib/shareLink.js'
 import StrategyMenu from './StrategyMenu.jsx'
 
 const Icon = ({ d }) => (
@@ -34,6 +35,18 @@ export default function TopBar() {
       }),
     []
   )
+
+  const [copied, setCopied] = useState(false)
+  const onShare = async () => {
+    const url = await shareUrl(getStrategy())
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch {
+      prompt('Copy this link to share the strategy:', url)
+    }
+  }
 
   const onImport = async (e) => {
     const file = e.target.files?.[0]
@@ -98,6 +111,9 @@ export default function TopBar() {
       <div className="divider" />
 
       <div className="group">
+        <button onClick={onShare} title="Copy a link that opens a copy of this strategy">
+          {copied ? '✓ Link copied' : 'Share'}
+        </button>
         <button onClick={() => fileRef.current?.click()}>Import</button>
         <input
           ref={fileRef}

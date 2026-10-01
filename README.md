@@ -3,7 +3,10 @@
 Offline-capable Guild War (GvG) strategy planner for *Where Winds Meet*. Inspired by
 [gvgstratmaker.com](https://gvgstratmaker.com/), rebuilt as an installable PWA that
 works with no internet and no backend. "Online" just means hosting the static build
-somewhere (e.g. Oracle Cloud). Strategies are shared by exporting/importing a JSON file.
+somewhere (e.g. Oracle Cloud). Strategies are shared with **Share** — a link
+whose `#s=…` fragment carries the whole strategy (gzipped with the browser's
+`CompressionStream`, so it never touches a server) — or by exporting/importing a
+JSON file. Opening a link adds the strategy as a new library entry.
 
 ## Stack
 
