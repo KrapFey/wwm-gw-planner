@@ -6,6 +6,12 @@ import { useEffect, useState } from 'react'
 // screen readers keep the name. A trailing "(Key)" renders as a kbd.
 const KEY = /\s*\(([^\s()]{1,14})\)$/
 
+function adopt(el) {
+  el.dataset.tip = el.getAttribute('title')
+  el.removeAttribute('title')
+  if (!el.textContent.trim()) el.setAttribute('aria-label', el.dataset.tip)
+}
+
 export default function Tooltip() {
   const [tip, setTip] = useState(null)
 
@@ -24,11 +30,7 @@ export default function Tooltip() {
     const show = (e) => {
       const el = e.target.closest?.('[title], [data-tip]')
       if (!el || el === current) return
-      if (el.hasAttribute('title')) {
-        el.dataset.tip = el.getAttribute('title')
-        el.removeAttribute('title')
-        if (!el.textContent.trim()) el.setAttribute('aria-label', el.dataset.tip)
-      }
+      if (el.hasAttribute('title')) adopt(el)
       current = el
       clearTimeout(timer)
       const open = () => {
@@ -53,6 +55,16 @@ export default function Tooltip() {
       if (current && !current.contains(e.relatedTarget)) hide()
     }
 
+    // React re-sets `title` when its text changes (Play -> Pause); re-adopt
+    // right away so the aria-label never goes stale
+    const mo = new MutationObserver((records) => {
+      for (const r of records) {
+        const el = r.target
+        if (el.hasAttribute('title') && el.dataset.tip !== undefined) adopt(el)
+      }
+    })
+    mo.observe(document.body, { subtree: true, attributeFilter: ['title'] })
+
     document.addEventListener('pointerover', show)
     document.addEventListener('focusin', show)
     document.addEventListener('pointerout', leave)
@@ -60,6 +72,7 @@ export default function Tooltip() {
     document.addEventListener('pointerdown', hide, true)
     window.addEventListener('scroll', hide, true)
     return () => {
+      mo.disconnect()
       clearTimeout(timer)
       document.removeEventListener('pointerover', show)
       document.removeEventListener('focusin', show)

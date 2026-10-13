@@ -28,3 +28,7 @@ TODO.md
 
 # knowledge graph (generated locally by graphify)
 graphify-out
+
+# playwright output
+test-results
+playwright-report
