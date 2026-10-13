@@ -9,7 +9,7 @@ import { toast, toastError } from './lib/toast.js'
 import { useStore, doUndo, doRedo } from './store/useStore.js'
 import { downloadStrategy } from './lib/strategyFile.js'
 import { decodeShare, shareCodeInUrl } from './lib/shareLink.js'
-import { drawerMode } from './lib/drawerMode.js'
+import { drawerMode, DRAWER_QUERY } from './lib/drawerMode.js'
 
 
 export default function App() {
@@ -17,12 +17,19 @@ export default function App() {
   const togglePanel = useStore((s) => s.togglePanel)
 
   // Rosters are overlay drawers on narrow screens: open the map first, and
-  // only ever one drawer at a time.
+  // only ever one drawer at a time. Applies on load and whenever the window
+  // narrows into drawer mode (open columns would otherwise cover the map).
   useEffect(() => {
-    if (!drawerMode()) return
-    const p = useStore.getState().ui.panels
-    if (p.ally) togglePanel('ally')
-    if (p.enemy) togglePanel('enemy')
+    const closeDrawers = () => {
+      const p = useStore.getState().ui.panels
+      if (p.ally) togglePanel('ally')
+      if (p.enemy) togglePanel('enemy')
+    }
+    if (drawerMode()) closeDrawers()
+    const mq = window.matchMedia(DRAWER_QUERY)
+    const onChange = (e) => e.matches && closeDrawers()
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
   }, [togglePanel])
   const toggleDrawer = (side) => {
     const other = side === 'ally' ? 'enemy' : 'ally'

@@ -15,7 +15,9 @@ import SquadToken from './SquadToken.jsx'
 import Marker from './Marker.jsx'
 import MarkerInspector from './MarkerInspector.jsx'
 import DrawingShape from './DrawingShape.jsx'
-import { NoteItem, TimerItem, NoteEditor } from './NoteTimer.jsx'
+import { NoteItem, TimerItem, NoteEditor, CARD_SIZE } from './NoteTimer.jsx'
+import SelectionBar from './SelectionBar.jsx'
+import Onboarding from './Onboarding.jsx'
 import LayoutEditorPanel from './LayoutEditorPanel.jsx'
 import PhasesBar from './PhasesBar.jsx'
 import CanvasToolbar, { TOOL_KEYS } from './CanvasToolbar.jsx'
@@ -192,7 +194,8 @@ export default function BattleMap() {
       if (k === 'delete' || k === 'backspace') {
         if (!sel) return
         e.preventDefault()
-        s.removeFromBoard(sel)
+        if (s.playback.open && s.playback.phaseId) s.removeFromBoard(sel)
+        else withUndo('Deleted from the map', () => s.removeFromBoard(sel))
         return setSel(null)
       }
       if (k === '[' || k === ']') {
@@ -237,7 +240,17 @@ export default function BattleMap() {
   // toolbar "add": a marker / note / timer at the centre of the view
   function addAt(type, extra) {
     const at = freeSpot(cam.centerMap(), act().strategy.items)
-    const id = act().addItem({ type, ...at, ...NEW_ITEM[type], ...extra })
+    // cards anchor at their top-left and keep a constant screen size, so shift
+    // by half that size (in map units) to centre them on the spot
+    const [cw, ch] = CARD_SIZE[type] ?? [0, 0]
+    const z = view.zoom
+    const id = act().addItem({
+      type,
+      x: at.x - cw / 2 / z,
+      y: at.y - ch / 2 / z,
+      ...NEW_ITEM[type],
+      ...extra
+    })
     setSel(id)
     if (type === 'note') setEditId(id)
   }
@@ -451,16 +464,47 @@ export default function BattleMap() {
           }
         />
 
-        {!editLayout && !pb.open && Object.values(byType).every((a) => !a.length) && (
-          <div className="map-hint" role="note">
-            Drag a team onto the map (or tap its pin), or pick a drawing tool on the left.
-          </div>
+        {!editLayout && !pb.open && (
+          <Onboarding
+            steps={[
+              {
+                label: 'Add a team',
+                hint: 'In a roster, under Attack or Defense',
+                done: squads.length > 0,
+                cta: 'Add team',
+                run: () => {
+                  if (!act().ui.panels.ally) act().togglePanel('ally')
+                  act().addSquad('ally', 'attack')
+                }
+              },
+              {
+                label: 'Put it on the map',
+                hint: 'Drag its grip, or tap its pin',
+                done: byType.pill.length > 0,
+                cta: 'Place it',
+                run: () => squads[0] && placeRef.current(squads[0].id)
+              },
+              {
+                label: 'Plan a phase',
+                hint: 'Move teams per phase, then press play',
+                done: phases.length > 0,
+                cta: 'Add phase',
+                run: () => {
+                  togglePhases()
+                  act().addPhase(null)
+                }
+              }
+            ]}
+          />
         )}
 
         {editNote && <NoteEditor stageRef={stageRef} note={editNote} onDone={stopEditing} />}
 
         {!editLayout && selItem?.type === 'marker' && (
           <MarkerInspector marker={selItem} onClose={() => setSel(null)} />
+        )}
+        {interactive && selItem && selItem.type !== 'marker' && (
+          <SelectionBar item={selItem} onSelect={setSel} onEditNote={setEditId} />
         )}
 
         {editLayout && (

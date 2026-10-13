@@ -52,7 +52,14 @@ export default function TopBar({ panels, onTogglePanel }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1600)
     } catch {
-      prompt('Copy this link to share the strategy:', url)
+      // clipboard blocked: hand over the link, pre-selected, to copy by hand
+      toast(
+        <span className="toast-link">
+          Copy this share link:
+          <input readOnly value={url} autoFocus onFocus={(e) => e.target.select()} aria-label="Share link" />
+        </span>,
+        { duration: 30000 }
+      )
     }
   }
 

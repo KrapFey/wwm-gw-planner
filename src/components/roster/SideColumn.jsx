@@ -38,7 +38,7 @@ export default function SideColumn({ sideId, meta }) {
           <div className="stat-group">
             {LANES.map((l) => (
               <span key={l} title={`${l} lane players`}>
-                {l[0]} {summary.byLane[l]}
+                <span className="lane-name">{l === 'Bottom' ? 'Bot' : l}</span> {summary.byLane[l]}
               </span>
             ))}
           </div>

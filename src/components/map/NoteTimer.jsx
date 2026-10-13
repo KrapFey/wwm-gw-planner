@@ -17,6 +17,8 @@ const NOTE_MIN_H = 72
 const TIMER_W = 132
 const TIMER_H = 92
 const stop = (e) => (e.cancelBubble = true)
+// default on-screen card size per type (BattleMap centres new cards with it)
+export const CARD_SIZE = { note: [NOTE_W, NOTE_H], timer: [TIMER_W, TIMER_H] }
 const PAPER_INK = '#1b1810'
 const tap = (fn) => ({
   onClick: (e) => (stop(e), fn()),

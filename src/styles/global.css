@@ -852,6 +852,9 @@ input[type='range']:focus-visible::-moz-range-thumb {
   align-items: center;
   gap: 5px;
 }
+.lane-name {
+  color: var(--text-faint);
+}
 .role-ico {
   width: 13px;
   height: 13px;
@@ -1241,8 +1244,7 @@ input[type='range']:focus-visible::-moz-range-thumb {
 .view-dock,
 .phases-bar,
 .inspector,
-.layout-panel,
-.map-hint {
+.layout-panel {
   background: var(--glass);
   backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--border-2);
@@ -1422,22 +1424,85 @@ input[type='range']:focus-visible::-moz-range-thumb {
   background: var(--surface-hi);
 }
 
-/* ---- empty map nudge ---------------------------------------------- */
-.map-hint {
+/* ---- first-run checklist (components/map/Onboarding.jsx) --------- */
+.onboarding {
   position: absolute;
-  left: 50%;
-  bottom: 28px;
+  right: var(--inset);
+  bottom: var(--inset);
   z-index: var(--z-panel);
-  translate: -50% 0;
-  max-width: calc(100% - 2 * var(--beside-rail));
-  padding: 11px 18px;
-  font-size: 13px;
-  color: var(--text-dim);
-  text-align: center;
-  text-wrap: balance;
-  border-radius: var(--r-pill);
-  pointer-events: none;
-  animation: rise-in 0.6s var(--spring-out) 0.8s backwards;
+  width: 300px;
+  padding: 12px 12px 8px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--glass-shadow);
+  cursor: default;
+  animation: rise-in 0.6s var(--spring-out) 0.9s backwards;
+}
+.onboarding header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding-left: 2px;
+  font-size: 13.5px;
+}
+.onboarding ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.onboarding li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 2px;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+}
+.onboarding li.next {
+  color: var(--text);
+}
+.onboarding li.done .ob-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-faint);
+}
+.ob-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  font-family: var(--mono);
+  font-size: 11px;
+  border: 1px solid var(--border-2);
+  border-radius: 50%;
+}
+.onboarding li.next .ob-mark {
+  color: var(--accent-2);
+  border-color: var(--accent);
+}
+.onboarding li.done .ob-mark {
+  color: var(--on-accent);
+  background: var(--ok);
+  border-color: var(--ok);
+  animation: chip-pop 0.4s var(--spring-out);
+}
+.ob-mark svg {
+  width: 13px;
+  height: 13px;
+}
+.ob-text {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+.ob-text small {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-faint);
 }
 
 /* ---- phases bar (bottom) ------------------------------------------ */
@@ -1666,6 +1731,48 @@ input[type='range']:focus-visible::-moz-range-thumb {
   gap: 6px;
 }
 
+/* ---- selection bar (bottom centre; notes, timers, drawings, pills) --- */
+.selection-bar {
+  position: absolute;
+  left: 50%;
+  bottom: var(--inset);
+  translate: -50% 0;
+  z-index: var(--z-panel);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  width: max-content; /* left: 50% would otherwise cap it at half the map */
+  max-width: calc(100% - 2 * var(--beside-rail));
+  padding: 5px 6px 5px 12px;
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--glass-shadow);
+  cursor: default;
+  animation: rise-in 0.35s var(--spring-out);
+}
+.stage-wrap.phases-open .selection-bar {
+  bottom: 122px;
+}
+.sel-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 160px;
+  margin-right: 2px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.selection-bar .swatch {
+  width: 18px;
+  height: 18px;
+}
+
 /* ---- map layout editor (top right, under the view dock) ------------ */
 .layout-panel {
   position: absolute;
@@ -1858,6 +1965,17 @@ input[type='range']:focus-visible::-moz-range-thumb {
 }
 .toast-msg {
   text-wrap: pretty;
+}
+.toast-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast-link input {
+  width: min(320px, 50vw);
+  padding: 4px 7px;
+  font-family: var(--mono);
+  font-size: 11.5px;
 }
 .toast-action {
   --btn-bg: var(--accent-soft);
@@ -2169,13 +2287,25 @@ input[type='range']:focus-visible::-moz-range-thumb {
     right: var(--inset);
     width: auto;
   }
+  .selection-bar {
+    left: var(--beside-rail);
+    right: var(--inset);
+    translate: none;
+    width: auto;
+    max-width: none;
+    justify-content: flex-start;
+  }
   .layout-panel {
     left: var(--inset);
     width: auto;
   }
-  .map-hint {
-    left: calc(50% + var(--rail-w) / 2);
-    max-width: calc(100% - var(--beside-rail) - var(--inset));
+  .onboarding {
+    left: var(--beside-rail);
+    width: auto;
+  }
+  /* phones: the selection bar takes the same strip */
+  .stage-wrap:has(.selection-bar, .inspector) .onboarding {
+    display: none;
   }
 }
 
