@@ -2,7 +2,15 @@ import { useStore } from '../../store/useStore.js'
 import { DRAW_COLORS, DRAW_WIDTHS, DRAW_TOOL_LABEL } from '../../lib/tacticalDefs.js'
 import { squadLabel } from '../../lib/selectors.js'
 import { withUndo } from '../../lib/toast.js'
-import { IconCopy, IconTrash, IconX, IconEdit, IconChevronDown } from '../Icons.jsx'
+import {
+  IconCopy,
+  IconTrash,
+  IconX,
+  IconEdit,
+  IconChevronDown,
+  IconSendBack,
+  IconBringForward
+} from '../Icons.jsx'
 
 // Floating bar for the selected team pill, note, timer or drawing (markers
 // have their own inspector). Surfaces what was keyboard- or double-click-only:
@@ -93,10 +101,10 @@ export default function SelectionBar({ item, onSelect, onEditNote }) {
         </button>
       )}
       <button className="tiny ghost" onClick={() => act().moveItem(item.id, -1)} title="Send back ([)">
-        Back
+        <IconSendBack />
       </button>
       <button className="tiny ghost" onClick={() => act().moveItem(item.id, 1)} title="Bring forward (])">
-        Forward
+        <IconBringForward />
       </button>
       <button
         className="tiny ghost danger"

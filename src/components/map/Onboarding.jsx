@@ -54,6 +54,9 @@ export default function Onboarding({ steps }) {
           </li>
         ))}
       </ol>
+      <a className="ob-guide" href="./guide.html" target="_blank" rel="noopener">
+        Read the user guide
+      </a>
     </aside>
   )
 }

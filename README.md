@@ -10,7 +10,7 @@ JSON file. Opening a link adds the strategy as a new library entry.
 
 ## Stack
 
-- React + Vite, modern dark design system + Inter (`@fontsource-variable/inter`)
+- React + Vite, bronze-and-brass dark design system + Geist / Geist Mono (`@fontsource-variable/geist*`)
 - Zustand (+ `zundo` for undo/redo), autosaved to `localStorage`
 - `vite-plugin-pwa` for offline install
 - Konva / react-konva for the battle map
@@ -26,7 +26,22 @@ npm run preview  # serve the built dist/
 npm run lint
 npm run test
 npm run gen:assets  # regenerate map.webp + PWA icons from source art (rare)
+npm run test:e2e    # Playwright UI smoke tests (local: installed Edge)
+npm run guide:shots # retake the user guide's screenshots
 ```
+
+## User guide
+
+`guide.html` is the user guide, built as a second page alongside the app
+(`/guide.html`, linked from the top bar) and precached for offline use. Copy is
+hand-written; screenshots live in `public/guide/img/`.
+
+`npm run guide:shots` regenerates them: it starts the dev server, builds a demo
+strategy through the store (`window.__store`), drives each scene with Playwright,
+saves 2x WebP crops, then rewrites every `<img data-shot="…">` in `guide.html`
+(src, width, height) and the "Screenshots updated" date. Pass scene names to
+retake only some (`npm run guide:shots -- phases pills`). Add a screenshot by
+adding a scene in `scripts/guide-shots.mjs` and an `<img data-shot>` in the page.
 
 If `esbuild` fails to run its postinstall in a locked-down npm, run once:
 `node node_modules/esbuild/install.js`.

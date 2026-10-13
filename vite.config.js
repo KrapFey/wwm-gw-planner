@@ -7,8 +7,12 @@ import { VitePWA } from 'vite-plugin-pwa'
 // straight from disk.
 export default defineConfig({
   base: './',
-  // Konva makes the single bundle ~0.5 MB; that's expected for this app.
-  build: { chunkSizeWarningLimit: 800 },
+  // Konva makes the app bundle ~0.5 MB; that's expected for this app.
+  // Two pages: the planner and the user guide (guide.html).
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: { input: { main: 'index.html', guide: 'guide.html' } }
+  },
   plugins: [
     react(),
     VitePWA({
@@ -40,11 +44,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
-        // Non-latin Inter subsets aren't needed offline for an English UI —
+        // Non-latin Geist subsets aren't needed offline for an English UI —
         // still served on demand, just not precached.
-        globIgnores: [
-          '**/inter-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*'
-        ]
+        globIgnores: ['**/geist*-{cyrillic,cyrillic-ext,vietnamese,symbols2}-*']
       }
     })
   ]

@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1112" />
+    <meta name="description" content="How to plan a Where Winds Meet guild war with GW Planner: rosters, the battle map, drawing, phases and animation, sharing and exports." />
+    <title>User guide · GW Planner</title>
+  </head>
+  <body class="guide">
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="g-top">
+      <a class="g-brand" href="./">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 2.5v19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          <path d="M7 3.5h12.5l-3.6 4.75 3.6 4.75H7z" fill="currentColor" />
+        </svg>
+        GW Planner
+      </a>
+      <span class="g-crumb">User guide</span>
+      <span class="g-spacer"></span>
+      <a class="g-open" href="./">Open the planner</a>
+    </header>
+
+    <div class="g-layout">
+      <nav class="g-toc" aria-label="Guide contents">
+        <details open>
+          <summary>Contents</summary>
+          <ol>
+            <li><a href="#start">Getting started</a></li>
+            <li><a href="#workspace">The workspace</a></li>
+            <li><a href="#rosters">Rosters and teams</a></li>
+            <li><a href="#placing">Teams on the map</a></li>
+            <li><a href="#drawing">Drawing</a></li>
+            <li><a href="#markers">Markers, notes and timers</a></li>
+            <li><a href="#editing">Selecting and editing</a></li>
+            <li><a href="#phases">Phases and animation</a></li>
+            <li><a href="#strategies">Your strategies</a></li>
+            <li><a href="#sharing">Sharing and exports</a></li>
+            <li><a href="#layout">Editing the map layout</a></li>
+            <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+            <li><a href="#mobile">Phones and tablets</a></li>
+            <li><a href="#offline">Offline, install and updates</a></li>
+            <li><a href="#faq">Questions</a></li>
+          </ol>
+        </details>
+      </nav>
+
+      <main id="content" class="g-main">
+        <section class="g-hero">
+          <h1>Plan the war before the war</h1>
+          <p class="g-lede">
+            GW Planner is a battle board for <em>Where Winds Meet</em> guild wars. Build both
+            rosters, put teams on the real map, draw the calls, and play the plan back phase by
+            phase. It runs in your browser, works offline, and keeps everything on your device.
+          </p>
+          <p class="g-meta">
+            Screenshots updated <time data-shots-updated datetime="2026-10-14">October 14, 2026</time>
+          </p>
+          <figure class="g-shot g-wide">
+            <img data-shot="overview" src="guide/img/overview.webp" width="1800" height="1125" alt="The planner with both rosters open, teams, arrows and markers on the battle map" loading="eager" />
+          </figure>
+        </section>
+
+        <section id="start">
+          <h2>Getting started</h2>
+          <p>
+            Open the planner and you land on an empty board with a short checklist in the
+            bottom-right corner of the map. Each step ticks itself off as you do it, and the
+            highlighted step has a button that does it for you.
+          </p>
+          <ol class="g-steps">
+            <li><strong>Add a team.</strong> Under <em>Attack</em> or <em>Defense</em> in a roster.</li>
+            <li><strong>Put it on the map.</strong> Drag the team's grip onto the map, or tap its pin.</li>
+            <li><strong>Plan a phase.</strong> Open the timeline, add a phase, move teams, press play.</li>
+          </ol>
+          <figure class="g-shot g-narrow">
+            <img data-shot="onboarding" src="guide/img/onboarding.webp" width="680" height="574" alt="The getting-started checklist with three steps" loading="lazy" />
+          </figure>
+          <p>
+            The checklist disappears once all three steps are done. Close it with <kbd>✕</kbd> to hide
+            it for good in this browser. Everything you do is saved automatically, so you can close
+            the tab at any time.
+          </p>
+        </section>
+
+        <section id="workspace">
+          <h2>The workspace</h2>
+          <p>The screen has four parts.</p>
+          <dl class="g-defs">
+            <dt>Top bar</dt>
+            <dd>
+              The strategy's name and your list of strategies, undo and redo, a link to this guide,
+              the save status, and <em>Share</em>, <em>Import</em> and <em>Export</em>. The <em>Our Guild</em> and
+              <em>Enemy</em> buttons at either end show or hide each side's roster.
+            </dd>
+            <dt>Rosters</dt>
+            <dd>One column per side, listing its teams and players.</dd>
+            <dt>Battle map</dt>
+            <dd>
+              The real guild war map. Scroll to zoom toward the cursor and drag empty space to pan.
+              The tool rail runs down its left edge.
+            </dd>
+            <dt>View controls</dt>
+            <dd>
+              Top right of the map: zoom out, the zoom level (click it to reset to 100%), zoom in,
+              fit to screen, export the board as a PNG, and the keyboard shortcut list.
+            </dd>
+          </dl>
+          <p class="g-tip">
+            Hover any button to see what it does and its shortcut key.
+          </p>
+        </section>
+
+        <section id="rosters">
+          <h2>Rosters and teams</h2>
+          <p>
+            <em>Our Guild</em> and <em>Enemy</em> each hold up to 30 players. The header shows the
+            current count, with a thin bar along its bottom edge that fills as the side fills up and
+            turns red when you go over. Below it, two tallies count players by role (tank, DPS,
+            healer) and by lane (top, mid, bottom).
+          </p>
+          <figure class="g-shot g-tall">
+            <img data-shot="roster" src="guide/img/roster.webp" width="678" height="1682" alt="Our Guild roster with Attack and Defense groups and an expanded team" loading="lazy" />
+          </figure>
+          <h3>Teams</h3>
+          <ul>
+            <li>
+              Teams are grouped into <strong>Attack</strong> and <strong>Defense</strong>. Add one with
+              the dashed button at the bottom of either group.
+            </li>
+            <li>
+              Click the name to rename a team. Leave it blank to use the automatic name, such as
+              <em>Att 1</em>.
+            </li>
+            <li>
+              The bar next to the name shows how many players the team has against its target size.
+            </li>
+            <li>
+              Expand a team with the arrow to set its <strong>lane</strong>, its <strong>target
+              size</strong> (type a number, use <kbd>−</kbd> <kbd>+</kbd>, or pick 5 or 10) and its
+              <strong>colour</strong>.
+            </li>
+            <li>
+              Add players with <em>+ Player</em> and set each one's role. The chips below the team
+              count each role.
+            </li>
+            <li>
+              Yellow warnings point out gaps, such as a team with no healer or no lane.
+            </li>
+            <li>
+              The copy icon duplicates a team with its players. The ✕ deletes it, and the message
+              that appears has an <em>Undo</em> button.
+            </li>
+          </ul>
+        </section>
+
+        <section id="placing">
+          <h2>Teams on the map</h2>
+          <p>A team goes on the map as a single pill. There are two ways to place it:</p>
+          <ul>
+            <li><strong>Drag</strong> the dotted grip next to the team's name onto the map.</li>
+            <li>
+              <strong>Tap the pin</strong> on the team card. The team lands in the middle of the
+              view, or moves there if it's already placed. This works on touch screens and from the
+              keyboard. On narrow screens the roster closes so you can see where the team landed.
+            </li>
+          </ul>
+          <figure class="g-shot">
+            <img data-shot="pills" src="guide/img/pills.webp" width="1360" height="880" alt="Team pills on the map showing name, player count, lane and roles" loading="lazy" />
+          </figure>
+          <p>
+            The pill's border shows its side and group: blue or teal for your Attack and Defense,
+            red or orange for the enemy's. The badge shows how many players the team has. The label
+            underneath shows its lane and role mix, such as <em>Top · T2 D6 H2</em>.
+          </p>
+          <ul>
+            <li>Drag a pill to move it.</li>
+            <li>Middle-click a pill to shrink it to a small disc, and again to restore it.</li>
+            <li>Double-click a pill to take it off the map. The team stays in the roster.</li>
+          </ul>
+        </section>
+
+        <section id="drawing">
+          <h2>Drawing</h2>
+          <p>
+            The tool rail on the left of the map holds the drawing tools. The brass highlight
+            shows the active tool.
+          </p>
+          <figure class="g-shot">
+            <img data-shot="drawing-tools" src="guide/img/drawing-tools.webp" width="730" height="652" alt="The tool rail with the pen active, the shapes menu open and the line-style strip" loading="lazy" />
+          </figure>
+          <dl class="g-defs">
+            <dt>Select / pan <kbd>V</kbd></dt>
+            <dd>Select and move pieces, or drag empty space to pan.</dd>
+            <dt>Freehand <kbd>D</kbd></dt>
+            <dd>Draw a free line by dragging.</dd>
+            <dt>Arrow <kbd>A</kbd></dt>
+            <dd>Drag from the start point to where the arrow should point.</dd>
+            <dt>Curved arrow <kbd>G</kbd></dt>
+            <dd>
+              Drag to draw it. Once it's selected, drag the round handle to bend it, or drag the
+              handle across the arrow to curve it the other way.
+            </dd>
+            <dt>Shapes</dt>
+            <dd>
+              Rectangle <kbd>R</kbd>, ellipse <kbd>C</kbd>, triangle <kbd>T</kbd> and straight line
+              <kbd>L</kbd>. Drag to set the size.
+            </dd>
+            <dt>Eraser <kbd>E</kbd></dt>
+            <dd>Click a drawing, or drag across several, to delete them.</dd>
+          </dl>
+          <p>
+            While a drawing tool is active, a strip next to the rail sets the colour and line
+            width for new drawings. Press <kbd>Esc</kbd> to go back to the select tool.
+          </p>
+        </section>
+
+        <section id="markers">
+          <h2>Markers, notes and timers</h2>
+          <p>
+            The second group on the rail adds pieces to the middle of the view. Each new piece steps
+            aside so it doesn't land on top of another.
+          </p>
+          <figure class="g-shot">
+            <img data-shot="markers" src="guide/img/markers.webp" width="720" height="482" alt="The objective marker menu: Attack, Danger, Defend, Hold, Yes and No" loading="lazy" />
+          </figure>
+          <dl class="g-defs">
+            <dt>Objective markers</dt>
+            <dd>
+              Attack, Danger, Defend, Hold, Yes and No. Select one to give it a label, resize it, or
+              rotate its point toward a target.
+            </dd>
+            <dt>Notes</dt>
+            <dd>
+              Sticky notes for calls and reminders. Double-click to write, pick a colour from the
+              dots along the top, and drag the bottom-right corner to resize.
+            </dd>
+            <dt>Timers</dt>
+            <dd>
+              Countdowns with start, pause, reset and ±10 seconds. The duration is saved with the
+              strategy. The running countdown is only on your screen.
+            </dd>
+          </dl>
+          <figure class="g-shot g-narrow">
+            <img data-shot="marker-inspector" src="guide/img/marker-inspector.webp" width="552" height="452" alt="The marker panel with label, size and rotation" loading="lazy" />
+          </figure>
+          <p>
+            Notes and timers keep the same size on screen as you zoom, and they appear in PNG and
+            video exports.
+          </p>
+        </section>
+
+        <section id="editing">
+          <h2>Selecting and editing</h2>
+          <p>
+            With the select tool, click any piece to select it. A bar appears at the bottom of the
+            map with what you can do to it.
+          </p>
+          <figure class="g-shot">
+            <img data-shot="selection-bar" src="guide/img/selection-bar.webp" width="1342" height="384" alt="The selection bar for an arrow: colour, width, duplicate, back, forward and delete" loading="lazy" />
+          </figure>
+          <ul>
+            <li><strong>Drawings:</strong> change the colour and line width.</li>
+            <li><strong>Notes:</strong> <em>Edit text</em>.</li>
+            <li><strong>Team pills:</strong> <em>Collapse</em> to a disc, or <em>Take off map</em>.</li>
+            <li>
+              <strong>Everything:</strong> <em>Duplicate</em> (<kbd>Ctrl</kbd> <kbd>D</kbd>),
+              <em>Back</em> and <em>Forward</em> (<kbd>[</kbd> <kbd>]</kbd>) to change which piece is
+              on top, and <em>Delete</em> (<kbd>Del</kbd>).
+            </li>
+          </ul>
+          <h3>Undo</h3>
+          <p>
+            Deleting or clearing happens straight away, and a message at the top of the screen
+            offers <em>Undo</em>. The message stays while you hover over it. The undo and redo
+            buttons in the top bar (<kbd>Ctrl</kbd> <kbd>Z</kbd>, <kbd>Ctrl</kbd> <kbd>Shift</kbd>
+            <kbd>Z</kbd>) step through every change to the strategy.
+          </p>
+          <figure class="g-shot g-narrow">
+            <img data-shot="undo-toast" src="guide/img/undo-toast.webp" width="1040" height="170" alt="A message saying a team was deleted, with an Undo button" loading="lazy" />
+          </figure>
+          <p>
+            The trash can at the bottom of the rail clears all team pills, markers or drawings at
+            once. Clearing team pills only takes them off the map; the teams stay in the rosters.
+          </p>
+        </section>
+
+        <section id="phases">
+          <h2>Phases and animation</h2>
+          <p>
+            Phases turn the board into a plan you can play. Each phase is a snapshot of where
+            everything is. Playing moves the pieces smoothly from one phase to the next.
+          </p>
+          <figure class="g-shot g-wide">
+            <img data-shot="phases" src="guide/img/phases.webp" width="1800" height="1125" alt="The phases bar during playback with motion trails behind moving teams" loading="lazy" />
+          </figure>
+          <ol class="g-steps">
+            <li>
+              Click <strong>Plan phases</strong> on the rail. The timeline bar opens at the bottom of
+              the map.
+            </li>
+            <li>
+              Click <strong>+ Phase</strong>. The new phase starts as a copy of the current one, or
+              of the board if it's the first.
+            </li>
+            <li>
+              With the phase selected, move teams and markers where they should be at that point.
+              Moves only change the selected phase.
+            </li>
+            <li>Press <strong>play</strong> to watch the plan unfold.</li>
+          </ol>
+          <h3>Working with phases</h3>
+          <ul>
+            <li>
+              <strong>Start</strong> is the board itself. Select it to edit the starting positions.
+            </li>
+            <li>
+              Click a phase to edit it, double-click to rename it, and drag to reorder. You can also
+              use <em>Move earlier</em> / <em>Move later</em>, <em>Duplicate</em> and
+              <em>Delete phase</em>.
+            </li>
+            <li>
+              <strong>Transition</strong> is how long the move into the phase takes, and
+              <strong>hold</strong> is how long the phase stays on screen before the next one.
+              <strong>Ease</strong> sets how the movement starts and stops.
+            </li>
+            <li>
+              <strong>Visible</strong> picks which pieces appear in the phase. While a phase is
+              selected, <kbd>Del</kbd> hides a piece in that phase only.
+            </li>
+            <li>
+              <strong>Paths</strong> sends a team along a line or arrow you've drawn, instead of in
+              a straight line.
+            </li>
+          </ul>
+          <figure class="g-shot">
+            <img data-shot="phase-paths" src="guide/img/phase-paths.webp" width="1372" height="648" alt="The Paths menu assigning a drawn curve to a team for one phase" loading="lazy" />
+          </figure>
+          <h3>Playback</h3>
+          <p>
+            Drag the scrubber to jump to any moment. Set the speed to 0.5×, 1× or 2×, and turn on
+            loop to repeat. The <strong>trail</strong> button shows a dashed line behind each moving
+            team. With the timeline open, <kbd>Space</kbd> plays and pauses, <kbd>←</kbd>
+            <kbd>→</kbd> step between phases, and <kbd>Home</kbd> goes back to Start.
+          </p>
+          <p>
+            The film button records one run of the plan and saves it as a video (WebM, or MP4 in
+            browsers that can't record WebM) to share with your guild.
+          </p>
+        </section>
+
+        <section id="strategies">
+          <h2>Your strategies</h2>
+          <p>
+            Keep as many strategies as you like, for different maps, opponents or backup plans.
+            Click the number next to the strategy's name to see them all.
+          </p>
+          <figure class="g-shot g-narrow">
+            <img data-shot="strategies" src="guide/img/strategies.webp" width="1490" height="464" alt="The strategy list with rename, duplicate and delete for each entry" loading="lazy" />
+          </figure>
+          <ul>
+            <li>Click a strategy to switch to it, or <em>+ New strategy</em> to start a fresh one.</li>
+            <li>
+              Hover a strategy to rename it (or double-click its name), duplicate it, or delete it.
+              Deleting offers <em>Undo</em>.
+            </li>
+            <li>Rename the open strategy by clicking its name in the top bar.</li>
+          </ul>
+          <p class="g-tip">
+            Undo history belongs to each strategy and starts fresh when you switch.
+          </p>
+        </section>
+
+        <section id="sharing">
+          <h2>Sharing and exports</h2>
+          <figure class="g-shot g-narrow">
+            <img data-shot="share" src="guide/img/share.webp" width="1180" height="114" alt="The top bar after Share, showing Link copied" loading="lazy" />
+          </figure>
+          <dl class="g-defs">
+            <dt>Share</dt>
+            <dd>
+              Copies a link that contains the whole strategy. Opening the link adds a copy to the
+              other person's planner. Nothing is uploaded: the strategy is compressed into the link
+              itself. If your browser blocks the clipboard, the link appears in a message for you to
+              copy.
+            </dd>
+            <dt>Export <kbd>Ctrl</kbd> <kbd>S</kbd></dt>
+            <dd>Saves the strategy as a <code>.json</code> file, which is good for backups.</dd>
+            <dt>Import</dt>
+            <dd>Opens a <code>.json</code> file as a new strategy. Nothing gets overwritten.</dd>
+            <dt>PNG</dt>
+            <dd>
+              The image button in the view controls saves the whole board as a picture, at full
+              map size whatever your zoom.
+            </dd>
+            <dt>Video</dt>
+            <dd>The film button in the phases bar records the animation (see <a href="#phases">Phases</a>).</dd>
+          </dl>
+        </section>
+
+        <section id="layout">
+          <h2>Editing the map layout</h2>
+          <p>
+            The map's fixed pieces (towers, geese, trees and the boss) can be moved if a game update
+            changes them. Click <strong>Edit map layout</strong> on the rail.
+          </p>
+          <figure class="g-shot">
+            <img data-shot="layout-editor" src="guide/img/layout-editor.webp" width="1280" height="1120" alt="The map layout editor listing fixtures with size and rotation controls" loading="lazy" />
+          </figure>
+          <ul>
+            <li>Drag fixtures on the map. Select one in the list to change its size or rotation.</li>
+            <li>Add more fixtures from the menu at the top, or reset to the default layout (with Undo).</li>
+            <li>
+              Changes are saved in this browser. <em>Copy layout JSON</em> or <em>Download</em> lets
+              you send the layout to whoever maintains the planner, so it can become the default for
+              everyone.
+            </li>
+          </ul>
+          <p>Click <strong>Done</strong> to return to planning.</p>
+        </section>
+
+        <section id="shortcuts">
+          <h2>Keyboard shortcuts</h2>
+          <figure class="g-shot g-narrow">
+            <img data-shot="shortcuts" src="guide/img/shortcuts.webp" width="550" height="1004" alt="The keyboard shortcut list opened from the help button" loading="lazy" />
+          </figure>
+          <div class="g-table-wrap">
+            <table class="g-keys">
+              <thead>
+                <tr><th scope="col">Keys</th><th scope="col">Action</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><kbd>V</kbd></td><td>Select / pan</td></tr>
+                <tr><td><kbd>D</kbd></td><td>Freehand draw</td></tr>
+                <tr><td><kbd>A</kbd> · <kbd>G</kbd></td><td>Arrow · curved arrow</td></tr>
+                <tr><td><kbd>R</kbd> <kbd>C</kbd> <kbd>T</kbd> <kbd>L</kbd></td><td>Rectangle, ellipse, triangle, line</td></tr>
+                <tr><td><kbd>E</kbd></td><td>Eraser</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Back to select, clear the selection</td></tr>
+                <tr><td><kbd>Del</kbd></td><td>Delete the selection (hide it, while editing a phase)</td></tr>
+                <tr><td><kbd>Ctrl</kbd> <kbd>D</kbd></td><td>Duplicate the selection</td></tr>
+                <tr><td><kbd>[</kbd> · <kbd>]</kbd></td><td>Send back · bring forward</td></tr>
+                <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd></td><td>Undo</td></tr>
+                <tr><td><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>Z</kbd> · <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Redo</td></tr>
+                <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Export the strategy file</td></tr>
+                <tr><td><kbd>Ctrl</kbd> <kbd>0</kbd></td><td>Reset zoom to 100%</td></tr>
+                <tr><td><kbd>Space</kbd></td><td>Play / pause (timeline open)</td></tr>
+                <tr><td><kbd>←</kbd> · <kbd>→</kbd> · <kbd>Home</kbd></td><td>Previous phase · next phase · Start</td></tr>
+                <tr><td>Middle-click</td><td>Collapse or expand a team pill</td></tr>
+                <tr><td>Double-click</td><td>Remove a pill, marker or drawing · edit a note</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>On a Mac, use <kbd>⌘</kbd> wherever this says <kbd>Ctrl</kbd>.</p>
+        </section>
+
+        <section id="mobile">
+          <h2>Phones and tablets</h2>
+          <figure class="g-shot g-phone">
+            <img data-shot="mobile" src="guide/img/mobile.webp" width="780" height="1688" alt="The planner on a phone with the Our Guild roster open over the map" loading="lazy" />
+          </figure>
+          <ul>
+            <li>
+              On narrower screens the rosters slide over the map. Open them with the side buttons in
+              the top bar; only one is open at a time.
+            </li>
+            <li>Use the pin on a team card to place teams, since dragging from the roster needs a mouse.</li>
+            <li>Zoom with the view controls at the top right of the map, and drag to pan.</li>
+            <li>Buttons get bigger on touch screens so they're easier to hit.</li>
+          </ul>
+        </section>
+
+        <section id="offline">
+          <h2>Offline, install and updates</h2>
+          <ul>
+            <li>
+              After your first visit the planner works with no internet. Your browser can also
+              install it as an app (look for <em>Install</em> in the address bar or browser menu).
+            </li>
+            <li>
+              Everything is saved in this browser on this device. The dot next to
+              <em>Autosaves locally</em> flashes green each time a change is saved.
+            </li>
+            <li>
+              When a new version is available, a message asks you to reload. Choose <em>Later</em>
+              to finish what you're doing first.
+            </li>
+          </ul>
+        </section>
+
+        <section id="faq">
+          <h2>Questions</h2>
+          <details class="g-faq">
+            <summary>Where are my strategies stored?</summary>
+            <p>
+              In your browser's storage on this device. Nothing is sent to a server. Clearing site
+              data for the planner deletes them, so export important strategies as files.
+            </p>
+          </details>
+          <details class="g-faq">
+            <summary>How do I move my strategies to another computer?</summary>
+            <p>
+              Export each one (<kbd>Ctrl</kbd> <kbd>S</kbd>) and import the files there, or send
+              yourself a Share link and open it on the other computer.
+            </p>
+          </details>
+          <details class="g-faq">
+            <summary>A share link says it's broken or incomplete.</summary>
+            <p>
+              The link was probably cut off when it was pasted, which some chat apps do with long
+              links. Ask for a new link, or for the exported file.
+            </p>
+          </details>
+          <details class="g-faq">
+            <summary>Does the other person see my timers counting down?</summary>
+            <p>
+              No. The duration is part of the strategy, but each person starts and stops their own
+              countdown.
+            </p>
+          </details>
+          <details class="g-faq">
+            <summary>The video button is greyed out or recording fails.</summary>
+            <p>
+              Add at least one phase first, and stop playback before recording. Some browsers can't
+              record the board; Chrome and Edge can.
+            </p>
+          </details>
+        </section>
+
+        <footer class="g-foot">
+          <a href="./">Open the planner</a>
+          <span>Map art © MightyLabs · <em>Where Winds Meet</em> is a trademark of its owners.</span>
+        </footer>
+      </main>
+    </div>
+
+    <dialog class="g-lightbox" aria-label="Screenshot">
+      <form method="dialog"><button class="g-close" aria-label="Close">✕</button></form>
+      <img alt="" />
+    </dialog>
+
+    <script type="module" src="/src/guide/main.js"></script>
+  </body>
+</html>

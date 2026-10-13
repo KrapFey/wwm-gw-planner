@@ -527,6 +527,32 @@ input[type='range']:focus-visible::-moz-range-thumb {
   --btn-bd: color-mix(in srgb, var(--side-accent) 50%, transparent);
 }
 
+/* user guide link (opens guide.html in a new tab) */
+.tb-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-dim);
+  text-decoration: none;
+  border-radius: var(--r-sm);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tb-guide svg {
+  width: 15px;
+  height: 15px;
+}
+.tb-guide:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+.tb-guide:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
 /* autosave status */
 .hint {
   display: inline-flex;
@@ -673,6 +699,14 @@ input[type='range']:focus-visible::-moz-range-thumb {
   border-radius: var(--r-sm);
   color: var(--text-dim);
   white-space: nowrap;
+}
+a.ctb-drop-item {
+  text-decoration: none;
+}
+.ctb-drop-item svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
 }
 .ctb-drop-item:hover {
   background: var(--surface-3);
@@ -930,15 +964,15 @@ input[type='range']:focus-visible::-moz-range-thumb {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr) auto auto auto auto;
   align-items: center;
-  gap: 2px;
-  padding: 7px 8px 7px 9px;
+  gap: 1px;
+  padding: 7px 6px 7px 7px;
 }
 .squad > header .place,
 .squad > header .dup,
 .squad > header .rm,
 .player .rm {
   color: var(--text-faint);
-  padding: 5px;
+  padding: 4px;
 }
 .squad > header .place.on {
   color: var(--team, var(--accent-2));
@@ -955,7 +989,7 @@ input[type='range']:focus-visible::-moz-range-thumb {
 }
 
 .caret {
-  padding: 4px;
+  padding: 4px 2px;
   border: none;
   background: transparent;
   color: var(--text-faint);
@@ -974,7 +1008,7 @@ input[type='range']:focus-visible::-moz-range-thumb {
 .drag-handle {
   display: grid;
   place-items: center;
-  width: 18px;
+  width: 16px;
   height: 26px;
   border-radius: var(--r-xs);
   cursor: grab;
@@ -998,7 +1032,8 @@ input[type='range']:focus-visible::-moz-range-thumb {
   min-width: 0;
   width: 100%;
   font-weight: 600;
-  padding: 5px 6px;
+  padding: 5px 4px;
+  text-overflow: ellipsis;
   background: transparent;
   border-color: transparent;
 }
@@ -1037,12 +1072,12 @@ input[type='range']:focus-visible::-moz-range-thumb {
 .fill {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   justify-self: end;
-  padding: 0 4px;
+  padding: 0 3px;
 }
 .fill-bar {
-  width: 38px;
+  width: 24px;
   height: 4px;
   border-radius: 3px;
   background: var(--surface-hi);
@@ -1425,6 +1460,10 @@ input[type='range']:focus-visible::-moz-range-thumb {
 }
 
 /* ---- first-run checklist (components/map/Onboarding.jsx) --------- */
+/* lifts clear of the selection bar when both are up */
+.stage-wrap:has(.selection-bar) .onboarding {
+  bottom: calc(var(--inset) + 64px);
+}
 .onboarding {
   position: absolute;
   right: var(--inset);
@@ -1497,6 +1536,17 @@ input[type='range']:focus-visible::-moz-range-thumb {
   flex: 1;
   min-width: 0;
   font-weight: 500;
+}
+.ob-guide {
+  display: block;
+  padding: 8px 2px 2px;
+  font-size: 12px;
+  color: var(--accent-2);
+  text-decoration: none;
+  border-top: 1px solid var(--border);
+}
+.ob-guide:hover {
+  text-decoration: underline;
 }
 .ob-text small {
   display: block;
@@ -1744,7 +1794,7 @@ input[type='range']:focus-visible::-moz-range-thumb {
   justify-content: center;
   gap: 4px;
   width: max-content; /* left: 50% would otherwise cap it at half the map */
-  max-width: calc(100% - 2 * var(--beside-rail));
+  max-width: calc(100% - 2 * var(--inset));
   padding: 5px 6px 5px 12px;
   background: var(--glass);
   backdrop-filter: blur(14px) saturate(1.2);
@@ -2223,7 +2273,8 @@ input[type='range']:focus-visible::-moz-range-thumb {
 }
 
 @media (max-width: 900px) {
-  .topbar .actions .btn-label {
+  .topbar .actions .btn-label,
+  .tb-guide .btn-label {
     display: none;
   }
   .topbar .actions button {

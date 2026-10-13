@@ -14,7 +14,8 @@ import {
   IconUpload,
   IconDownload,
   IconPanelLeft,
-  IconPanelRight
+  IconPanelRight,
+  IconLibrary
 } from './Icons.jsx'
 
 // panels / onTogglePanel: which roster columns are open (App owns the
@@ -115,6 +116,11 @@ export default function TopBar({ panels, onTogglePanel }) {
       </div>
 
       <span className="spacer" />
+
+      <a className="tb-guide" href="./guide.html" target="_blank" rel="noopener" title="Open the user guide">
+        <IconLibrary />
+        <span className="btn-label">Guide</span>
+      </a>
 
       <span className={'hint' + (justSaved ? ' saved' : '')} role="status">
         <span className="save-dot" aria-hidden="true" />
