@@ -21,8 +21,8 @@ export default defineConfig({
         short_name: 'GW Planner',
         description:
           'Offline-capable Guild War strategy planner for Where Winds Meet',
-        theme_color: '#0a0b0f',
-        background_color: '#0a0b0f',
+        theme_color: '#0b1112',
+        background_color: '#0b1112',
         display: 'standalone',
         start_url: './',
         scope: './',

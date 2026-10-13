@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 import { ROLES, LANES, SQUAD_SIZE_PRESETS, TEAM_SWATCHES } from '../../lib/schema.js'
-import { squadStats, squadLabel, squadDefaultName, ROLE_ICON } from '../../lib/selectors.js'
-import { IconCopy } from '../Icons.jsx'
+import { squadStats, squadLabel, squadDefaultName } from '../../lib/selectors.js'
+import { IconCopy, IconX, IconChevronRight, IconGrip, IconWarn, IconPlus, IconMinus, RoleIcon } from '../Icons.jsx'
 import PlayerRow from './PlayerRow.jsx'
 
 export default function SquadCard({ squad }) {
@@ -31,7 +31,7 @@ export default function SquadCard({ squad }) {
   }, [colorOpen])
 
   return (
-    <div className="squad" style={{ borderLeftColor: squad.color }}>
+    <div className={'squad' + (open ? ' open' : '')} style={{ '--team': squad.color }}>
       <header>
         <button
           className="tiny ghost caret"
@@ -39,7 +39,7 @@ export default function SquadCard({ squad }) {
           title={open ? 'Collapse team' : 'Expand team'}
           aria-expanded={open}
         >
-          {open ? '▾' : '▸'}
+          <IconChevronRight />
         </button>
 
         <span
@@ -51,7 +51,7 @@ export default function SquadCard({ squad }) {
           }}
           title="Drag the whole team onto the battle map"
         >
-          ⠿
+          <IconGrip />
         </span>
         <input
           className="name"
@@ -89,7 +89,7 @@ export default function SquadCard({ squad }) {
               removeSquad(squad.id)
           }}
         >
-          ✕
+          <IconX />
         </button>
 
         {open && (
@@ -108,17 +108,19 @@ export default function SquadCard({ squad }) {
             <span className="stepper" title="Target team size">
               <button
                 className="tiny"
+                aria-label="Smaller target"
                 onClick={() =>
                   updateSquad(squad.id, {
                     targetSize: Math.max(1, squad.targetSize - 1)
                   })
                 }
               >
-                −
+                <IconMinus />
               </button>
               <input
                 type="number"
                 min="1"
+                aria-label="Target team size"
                 value={squad.targetSize}
                 onChange={(e) =>
                   updateSquad(squad.id, {
@@ -128,11 +130,12 @@ export default function SquadCard({ squad }) {
               />
               <button
                 className="tiny"
+                aria-label="Larger target"
                 onClick={() =>
                   updateSquad(squad.id, { targetSize: squad.targetSize + 1 })
                 }
               >
-                +
+                <IconPlus />
               </button>
             </span>
 
@@ -181,7 +184,7 @@ export default function SquadCard({ squad }) {
           <div className="comp">
             {ROLES.map((r) => (
               <span className="chip" key={r} title={r}>
-                {ROLE_ICON[r]} {byRole[r]}
+                <RoleIcon role={r} /> {byRole[r]}
               </span>
             ))}
           </div>
@@ -189,7 +192,9 @@ export default function SquadCard({ squad }) {
           {warnings.length > 0 && (
             <div className="warnings">
               {warnings.map((w) => (
-                <span key={w}>⚠ {w}</span>
+                <span key={w}>
+                  <IconWarn /> {w}
+                </span>
               ))}
             </div>
           )}
@@ -202,7 +207,7 @@ export default function SquadCard({ squad }) {
 
           <div className="row-actions">
             <button className="tiny" onClick={() => addPlayer(squad.side, squad.id)}>
-              + Player
+              <IconPlus /> Player
             </button>
           </div>
         </>

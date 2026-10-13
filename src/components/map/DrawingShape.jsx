@@ -62,7 +62,7 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
     lineCap: 'round',
     lineJoin: 'round',
     hitStrokeWidth: Math.max(16, drawing.width * 3),
-    shadowColor: selected ? '#7c6cff' : undefined,
+    shadowColor: selected ? '#c9a35f' : undefined,
     shadowBlur: selected ? 12 : 0,
     shadowOpacity: selected ? 0.9 : 0
   }
@@ -118,7 +118,7 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
             y={storedAy}
             radius={9}
             fill="#fff"
-            stroke="#7c6cff"
+            stroke="#c9a35f"
             strokeWidth={2.5}
             shadowColor="#000"
             shadowBlur={4}

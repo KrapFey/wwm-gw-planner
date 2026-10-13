@@ -69,9 +69,3 @@ export function sideSummary(strategy, sideId) {
     unassigned
   }
 }
-
-export const ROLE_ICON = {
-  Tank: '🛡',
-  DPS: '⚔',
-  Healer: '✚'
-}

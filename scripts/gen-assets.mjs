@@ -26,9 +26,11 @@ for (const size of [192, 512]) {
 // maskable: mark shrunk into the safe zone, dark bg to the edges
 const maskable = Buffer.from(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-     <rect width="512" height="512" fill="#101218"/>
-     <circle cx="256" cy="256" r="120" fill="none" stroke="#7c6cff" stroke-width="22"/>
-     <path d="M256 118 L256 394 M118 256 L394 256" stroke="#7c6cff" stroke-width="18" stroke-linecap="round"/>
+     <rect width="512" height="512" fill="#10181a"/>
+     <g transform="translate(96.75 100) scale(13)">
+       <path d="M6 2.5v19" stroke="#c9a35f" stroke-width="2.2" stroke-linecap="round"/>
+       <path d="M7 3.5h12.5l-3.6 4.75 3.6 4.75H7z" fill="#c9a35f"/>
+     </g>
    </svg>`
 )
 await sharp(maskable, { density: 512 })

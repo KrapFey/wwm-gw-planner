@@ -17,7 +17,10 @@ import {
   IconSkipFwd,
   IconFilm,
   IconTrail,
-  IconX
+  IconX,
+  IconLoop,
+  IconPlus,
+  IconChevronDown
 } from '../Icons.jsx'
 
 const secs = (ms) => (ms / 1000).toFixed(1)
@@ -175,8 +178,8 @@ export default function PhasesBar({ stageRef }) {
             <IconSkipBack />
           </button>
           <button
-            className={'dock-btn' + (pb.playing ? ' on' : '')}
-            title={pb.playing ? 'Pause' : 'Play'}
+            className={'dock-btn pb-play' + (pb.playing ? ' on' : '')}
+            title={pb.playing ? 'Pause (Space)' : 'Play (Space)'}
             disabled={!hasPhases}
             onClick={() => (pb.playing ? setPlayback({ playing: false }) : play())}
           >
@@ -197,8 +200,6 @@ export default function PhasesBar({ stageRef }) {
             <IconSkipFwd />
           </button>
         </div>
-
-        <span className="sep" />
 
         <div
           className="pb-chips"
@@ -261,7 +262,7 @@ export default function PhasesBar({ stageRef }) {
               addPhase(pb.phaseId ?? phases[phases.length - 1]?.id ?? null)
             }
           >
-            + Phase
+            <IconPlus /> Phase
           </button>
         </div>
 
@@ -276,6 +277,7 @@ export default function PhasesBar({ stageRef }) {
               max={total}
               step="10"
               value={Math.min(pb.t, total)}
+              style={{ '--p': total ? Math.min(pb.t, total) / total : 0 }}
               onChange={(e) => setPlayback({ playing: false, t: Number(e.target.value) })}
             />
             <span className="pb-time">
@@ -296,9 +298,10 @@ export default function PhasesBar({ stageRef }) {
             <button
               className={'dock-btn' + (pb.loop ? ' on' : '')}
               title="Loop"
+              aria-pressed={pb.loop}
               onClick={() => setPlayback({ loop: !pb.loop })}
             >
-              ⟳
+              <IconLoop />
             </button>
             <button
               className={'dock-btn' + (showTrail ? ' on' : '')}
@@ -333,7 +336,7 @@ export default function PhasesBar({ stageRef }) {
 
       {selPhase && (
         <div className="pb-row pb-timing">
-          <span className="muted">{selPhase.name}</span>
+          <strong className="pb-phase-name">{selPhase.name}</strong>
           <label>
             transition
             <input
@@ -383,7 +386,7 @@ export default function PhasesBar({ stageRef }) {
                 }
                 onClick={() => setPathsOpen((v) => !v)}
               >
-                Paths ▾
+                Paths <IconChevronDown />
               </button>
               {pathsOpen && (
                 <div className="pb-vis-pop">
@@ -427,7 +430,7 @@ export default function PhasesBar({ stageRef }) {
           {rows.length > 0 && (
             <div className="pb-vis" ref={visRef}>
               <button className="tiny ghost" onClick={() => setVisOpen((v) => !v)}>
-                Visible ▾
+                Visible <IconChevronDown />
               </button>
               {visOpen && (
                 <div className="pb-vis-pop">
@@ -452,10 +455,10 @@ export default function PhasesBar({ stageRef }) {
 
           <span className="spacer" />
           <button className="tiny ghost" onClick={() => movePhase(selPhase.id, -1)}>
-            ‹ move
+            Move earlier
           </button>
           <button className="tiny ghost" onClick={() => movePhase(selPhase.id, 1)}>
-            move ›
+            Move later
           </button>
           <button
             className="tiny ghost"
@@ -465,7 +468,7 @@ export default function PhasesBar({ stageRef }) {
             Duplicate
           </button>
           <button
-            className="tiny ghost"
+            className="tiny ghost danger"
             onClick={() => {
               if (confirm(`Delete ${selPhase.name}?`)) removePhase(selPhase.id)
             }}

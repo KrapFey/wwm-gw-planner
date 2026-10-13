@@ -68,7 +68,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
     return (
       <Group {...dragProps}>
         {selected && (
-          <Circle radius={DISC_R + 6} stroke="#7c6cff" strokeWidth={2} dash={[5, 4]} listening={false} />
+          <Circle radius={DISC_R + 6} stroke="#c9a35f" strokeWidth={2} dash={[5, 4]} listening={false} />
         )}
         <Circle
           radius={DISC_R}
@@ -121,7 +121,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
           width={w + 10}
           height={H + 10}
           cornerRadius={H / 2 + 5}
-          stroke="#7c6cff"
+          stroke="#c9a35f"
           strokeWidth={2}
           dash={[5, 4]}
           listening={false}

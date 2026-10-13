@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
+import { IconChevronDown, IconEdit, IconCopy, IconTrash, IconPlus } from './Icons.jsx'
 
 export default function StrategyMenu() {
   const order = useStore((s) => s.order)
@@ -29,12 +30,20 @@ export default function StrategyMenu() {
 
   return (
     <div className="strat-menu" ref={ref}>
-      <button className="ghost strat-trigger" onClick={() => setOpen((v) => !v)}>
-        {order.length} {order.length === 1 ? 'strategy' : 'strategies'} ▾
+      <button
+        className={'ghost strat-trigger' + (open ? ' open' : '')}
+        onClick={() => setOpen((v) => !v)}
+        title="Your strategies"
+        aria-expanded={open}
+        aria-label={`Switch strategy (${order.length} saved)`}
+      >
+        <span className="count-badge">{order.length}</span>
+        <IconChevronDown />
       </button>
 
       {open && (
         <div className="strat-pop">
+          <div className="pop-title">Strategies in this browser</div>
           <ul>
             {order.map((id) => (
               <li key={id} className={id === activeId ? 'on' : ''}>
@@ -55,7 +64,7 @@ export default function StrategyMenu() {
                     if (n && n.trim()) renameStrategy(id, n.trim())
                   }}
                 >
-                  ✎
+                  <IconEdit />
                 </button>
                 <button
                   className="tiny ghost"
@@ -65,17 +74,17 @@ export default function StrategyMenu() {
                     setOpen(false)
                   }}
                 >
-                  ⧉
+                  <IconCopy />
                 </button>
                 <button
-                  className="tiny ghost"
+                  className="tiny ghost danger"
                   title="Delete"
                   disabled={order.length <= 1}
                   onClick={() => {
                     if (confirm(`Delete "${nameOf(id)}"?`)) deleteStrategy(id)
                   }}
                 >
-                  ✕
+                  <IconTrash />
                 </button>
               </li>
             ))}
@@ -87,7 +96,7 @@ export default function StrategyMenu() {
               setOpen(false)
             }}
           >
-            + New strategy
+            <IconPlus /> New strategy
           </button>
         </div>
       )}

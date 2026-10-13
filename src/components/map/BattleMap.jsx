@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { Stage, Layer, Group, Circle, Line as KLine } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { MAP_W, MAP_H, clampToMap } from '../../lib/mapLayout.js'
@@ -45,7 +44,6 @@ export default function BattleMap() {
   const [menu, setMenu] = useState(null) // open toolbar dropdown
   const [sel, setSel] = useState(null) // selected item id
   const [editId, setEditId] = useState(null) // note whose text is being edited
-  const [toolbarSlot, setToolbarSlot] = useState(null)
   const draw = useDrawTool({
     tool,
     color: drawColor,
@@ -53,11 +51,6 @@ export default function BattleMap() {
     stageRef,
     pointerMap: cam.pointerMap
   })
-
-  // the canvas toolbar renders up in the top bar
-  useEffect(() => {
-    setToolbarSlot(document.getElementById('canvas-toolbar-slot'))
-  }, [])
 
   const setTool = (t) => {
     setToolRaw(t)
@@ -243,40 +236,6 @@ export default function BattleMap() {
 
   return (
     <div className="map">
-      {toolbarSlot &&
-        createPortal(
-          <CanvasToolbar
-            editLayout={editLayout}
-            tool={tool}
-            setTool={setTool}
-            isShapeTool={SHAPE_TOOLS.includes(tool)}
-            menu={menu}
-            setMenu={setMenu}
-            phasesOpen={pb.open}
-            counts={{
-              pill: byType.pill.length,
-              marker: byType.marker.length,
-              drawing: byType.drawing.length
-            }}
-            drawColor={drawColor}
-            setDrawColor={setDrawColor}
-            drawWidth={drawWidth}
-            setDrawWidth={setDrawWidth}
-            zoomPct={Math.round(view.zoom * 100)}
-            onAdd={addAt}
-            onClear={act().clearItems}
-            togglePhases={togglePhases}
-            toggleEditLayout={toggleEditLayout}
-            zoomBy={cam.zoomBy}
-            zoomTo={cam.zoomTo}
-            fit={cam.fit}
-            onExportPng={() =>
-              downloadBoardImage(stageRef.current, stratName, { width: MAP_W, height: MAP_H })
-            }
-          />,
-          toolbarSlot
-        )}
-
       <div
         className={'stage-wrap' + (pb.open ? ' phases-open' : '') + stageClass}
         ref={wrapRef}
@@ -410,6 +369,42 @@ export default function BattleMap() {
               )}
             </Layer>
           </Stage>
+        )}
+
+        <CanvasToolbar
+          editLayout={editLayout}
+          tool={tool}
+          setTool={setTool}
+          isShapeTool={SHAPE_TOOLS.includes(tool)}
+          menu={menu}
+          setMenu={setMenu}
+          phasesOpen={pb.open}
+          counts={{
+            pill: byType.pill.length,
+            marker: byType.marker.length,
+            drawing: byType.drawing.length
+          }}
+          drawColor={drawColor}
+          setDrawColor={setDrawColor}
+          drawWidth={drawWidth}
+          setDrawWidth={setDrawWidth}
+          zoomPct={Math.round(view.zoom * 100)}
+          onAdd={addAt}
+          onClear={act().clearItems}
+          togglePhases={togglePhases}
+          toggleEditLayout={toggleEditLayout}
+          zoomBy={cam.zoomBy}
+          zoomTo={cam.zoomTo}
+          fit={cam.fit}
+          onExportPng={() =>
+            downloadBoardImage(stageRef.current, stratName, { width: MAP_W, height: MAP_H })
+          }
+        />
+
+        {!editLayout && !pb.open && Object.values(byType).every((a) => !a.length) && (
+          <div className="map-hint" role="note">
+            Drag a team onto the map from a roster, or pick a drawing tool on the left.
+          </div>
         )}
 
         {editNote && <NoteEditor stageRef={stageRef} note={editNote} onDone={stopEditing} />}

@@ -77,7 +77,7 @@ function Marker({ marker, x, y, selected, onSelect, locked = false }) {
       {selected && (
         <Circle
           radius={R * sc + 6}
-          stroke="#7c6cff"
+          stroke="#c9a35f"
           strokeWidth={2}
           dash={[5, 4]}
           listening={false}

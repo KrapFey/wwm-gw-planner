@@ -2,16 +2,23 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore, useTemporal, doUndo, doRedo, subscribeSaved } from '../store/useStore.js'
 import { downloadStrategy, readStrategyFile } from '../lib/strategyFile.js'
 import { shareUrl } from '../lib/shareLink.js'
+import { SIDE_META } from '../lib/schema.js'
 import StrategyMenu from './StrategyMenu.jsx'
+import {
+  IconBanner,
+  IconUndo,
+  IconRedo,
+  IconLink,
+  IconCheck,
+  IconUpload,
+  IconDownload,
+  IconPanelLeft,
+  IconPanelRight
+} from './Icons.jsx'
 
-const Icon = ({ d }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-    strokeLinecap="round" strokeLinejoin="round">
-    {d}
-  </svg>
-)
-
-export default function TopBar() {
+// panels / onTogglePanel: which roster columns are open (App owns the
+// drawer logic); each side's toggle sits at its own end of the bar.
+export default function TopBar({ panels, onTogglePanel }) {
   const name = useStore((s) => s.strategy.meta.name)
   const setStrategyName = useStore((s) => s.setStrategyName)
   const loadStrategy = useStore((s) => s.loadStrategy)
@@ -60,35 +67,33 @@ export default function TopBar() {
   }
 
   return (
-    <div className="topbar">
-      <div className="brand">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="2" />
-          <path d="M12 3.5v17M3.5 12h17" stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" />
-        </svg>
-        GW Planner
+    <header className="topbar">
+      <div className="brand" title="Where Winds Meet — Guild War planner">
+        <IconBanner />
+        <span className="brand-name">GW Planner</span>
       </div>
 
-      <input
-        className="strategy-name"
-        value={name}
-        onChange={(e) => setStrategyName(e.target.value)}
-        aria-label="Strategy name"
-      />
+      <PanelToggle side="ally" label="Our Guild" open={panels.ally} onToggle={onTogglePanel} />
 
-      <StrategyMenu />
+      <div className="doc">
+        <input
+          className="strategy-name"
+          value={name}
+          onChange={(e) => setStrategyName(e.target.value)}
+          aria-label="Strategy name"
+          spellCheck={false}
+        />
+        <StrategyMenu />
+      </div>
 
-      <div className="divider" />
-
-      <div className="group">
+      <div className="group history">
         <button
           className="icon-btn ghost"
           onClick={() => doUndo()}
           disabled={!pastCount}
           title="Undo (Ctrl+Z)"
         >
-          <Icon d={<path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" />} />
+          <IconUndo />
         </button>
         <button
           className="icon-btn ghost"
@@ -96,25 +101,30 @@ export default function TopBar() {
           disabled={!futureCount}
           title="Redo (Ctrl+Shift+Z)"
         >
-          <Icon d={<path d="m15 14 5-5-5-5M20 9H9a5 5 0 0 0 0 10h3" />} />
+          <IconRedo />
         </button>
       </div>
 
-      <div className="divider tb-tools-div" />
-      {/* BattleMap portals its canvas toolbar in here; it flex-grows to fill
-          the free space, and drops to its own full-width row on smaller screens */}
-      <div className="topbar-tools" id="canvas-toolbar-slot" />
+      <span className="spacer" />
 
-      <span className={'hint' + (justSaved ? ' saved' : '')}>
-        {justSaved ? '✓ Saved' : 'Autosaves locally'}
+      <span className={'hint' + (justSaved ? ' saved' : '')} role="status">
+        <span className="save-dot" aria-hidden="true" />
+        <span className="hint-text">{justSaved ? 'Saved' : 'Autosaves locally'}</span>
       </span>
-      <div className="divider" />
 
-      <div className="group">
-        <button onClick={onShare} title="Copy a link that opens a copy of this strategy">
-          {copied ? '✓ Link copied' : 'Share'}
+      <div className="group actions">
+        <button
+          className={copied ? 'done' : ''}
+          onClick={onShare}
+          title="Copy a link that opens a copy of this strategy"
+        >
+          {copied ? <IconCheck /> : <IconLink />}
+          <span className="btn-label">{copied ? 'Link copied' : 'Share'}</span>
         </button>
-        <button onClick={() => fileRef.current?.click()}>Import</button>
+        <button onClick={() => fileRef.current?.click()} title="Open a strategy file">
+          <IconUpload />
+          <span className="btn-label">Import</span>
+        </button>
         <input
           ref={fileRef}
           type="file"
@@ -122,11 +132,32 @@ export default function TopBar() {
           hidden
           onChange={onImport}
         />
-        <button className="primary" onClick={() => downloadStrategy(getStrategy())}>
-          <Icon d={<><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>} />
-          Export
+        <button
+          className="primary"
+          onClick={() => downloadStrategy(getStrategy())}
+          title="Save this strategy as a file (Ctrl+S)"
+        >
+          <IconDownload />
+          <span className="btn-label">Export</span>
         </button>
       </div>
-    </div>
+
+      <PanelToggle side="enemy" label="Enemy" open={panels.enemy} onToggle={onTogglePanel} />
+    </header>
+  )
+}
+
+function PanelToggle({ side, label, open, onToggle }) {
+  return (
+    <button
+      className={'panel-toggle side-' + side + (open ? ' on' : '')}
+      style={{ '--side-accent': SIDE_META[side].color }}
+      onClick={() => onToggle(side)}
+      aria-pressed={open}
+      title={(open ? 'Hide ' : 'Show ') + (side === 'ally' ? 'our roster' : 'enemy roster')}
+    >
+      {side === 'ally' ? <IconPanelLeft /> : <IconPanelRight />}
+      <span className="btn-label">{label}</span>
+    </button>
   )
 }

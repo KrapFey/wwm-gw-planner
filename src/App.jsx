@@ -3,6 +3,7 @@ import TopBar from './components/TopBar.jsx'
 import RosterPanel from './components/roster/RosterPanel.jsx'
 import BattleMap from './components/map/BattleMap.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
+import Tooltip from './components/Tooltip.jsx'
 import { useStore, doUndo, doRedo } from './store/useStore.js'
 import { downloadStrategy } from './lib/strategyFile.js'
 import { decodeShare, shareCodeInUrl } from './lib/shareLink.js'
@@ -69,7 +70,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <TopBar />
+      <TopBar panels={panels} onTogglePanel={toggleDrawer} />
       <div
         className={
           'workspace' +
@@ -79,27 +80,14 @@ export default function App() {
       >
         <RosterPanel sideId="ally" />
 
-        <div className="map-pane">
-          <button
-            className="roster-edge left"
-            onClick={() => toggleDrawer('ally')}
-            title={panels.ally ? 'Hide our roster' : 'Show our roster'}
-          >
-            {panels.ally ? '‹' : '›'}
-          </button>
-          <button
-            className="roster-edge right"
-            onClick={() => toggleDrawer('enemy')}
-            title={panels.enemy ? 'Hide enemy roster' : 'Show enemy roster'}
-          >
-            {panels.enemy ? '›' : '‹'}
-          </button>
+        <main className="map-pane">
           <BattleMap />
-        </div>
+        </main>
 
         <RosterPanel sideId="enemy" />
       </div>
       <UpdateToast />
+      <Tooltip />
     </div>
   )
 }

@@ -38,11 +38,11 @@ export default function LayoutEditorPanel({ selectedId, onSelect, onDone }) {
     <div className="layout-panel">
       <header>
         <strong>Edit map layout</strong>
-        <button className="tiny primary" style={{ marginLeft: 'auto' }} onClick={onDone}>
+        <button className="tiny primary close" onClick={onDone}>
           Done
         </button>
       </header>
-      <span className="muted" style={{ fontSize: 11 }}>drag fixtures on the map</span>
+      <span className="panel-hint">Drag fixtures on the map to place them.</span>
 
       <div className="add-row">
         <select value={kind} onChange={(e) => setKind(e.target.value)}>
@@ -78,6 +78,7 @@ export default function LayoutEditorPanel({ selectedId, onSelect, onDone }) {
                     max="3"
                     step="0.05"
                     value={f.scale ?? 1}
+                    style={{ '--p': ((f.scale ?? 1) - 0.3) / 2.7 }}
                     onChange={(e) => updateFixture(f.id, { scale: Number(e.target.value) })}
                   />
                   <span className="mono">{(f.scale ?? 1).toFixed(2)}</span>
@@ -104,7 +105,7 @@ export default function LayoutEditorPanel({ selectedId, onSelect, onDone }) {
 
       <footer>
         <button className="tiny primary" onClick={copy}>
-          {copied ? 'Copied ✓' : 'Copy layout JSON'}
+          {copied ? 'Copied' : 'Copy layout JSON'}
         </button>
         <button className="tiny" onClick={download}>
           Download

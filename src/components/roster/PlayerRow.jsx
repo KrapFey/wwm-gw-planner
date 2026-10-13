@@ -1,5 +1,6 @@
 import { useStore } from '../../store/useStore.js'
 import { ROLES } from '../../lib/schema.js'
+import { RoleIcon, IconX } from '../Icons.jsx'
 
 // A player is a single role slot within a team.
 export default function PlayerRow({ player }) {
@@ -8,6 +9,7 @@ export default function PlayerRow({ player }) {
 
   return (
     <div className="player">
+      <RoleIcon role={player.role} />
       <select
         className="role"
         value={player.role}
@@ -24,7 +26,7 @@ export default function PlayerRow({ player }) {
         title="Remove player"
         onClick={() => removePlayer(player.id)}
       >
-        ✕
+        <IconX />
       </button>
     </div>
   )

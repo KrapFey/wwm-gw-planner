@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import {
   MARKER_KINDS,
   MARKER_KIND_LIST,
@@ -12,7 +13,7 @@ import {
   IconArrow,
   IconArrowCurve,
   IconEraser,
-  IconFlag,
+  IconTarget,
   IconNote,
   IconClock,
   IconLayers,
@@ -50,6 +51,9 @@ export const TOOL_KEYS = {
   l: ['line', 'Line'],
   e: ['erase', 'Eraser']
 }
+const KEY_OF = Object.fromEntries(
+  Object.entries(TOOL_KEYS).map(([k, [t]]) => [t, k.toUpperCase()])
+)
 
 const SHORTCUTS = [
   ...Object.entries(TOOL_KEYS).map(([k, [, label]]) => [k.toUpperCase(), label]),
@@ -60,14 +64,19 @@ const SHORTCUTS = [
   ['Ctrl 0', 'Reset zoom']
 ]
 
-// The single toolbar that lives in the top bar (BattleMap portals it there).
-// Purely presentational — every action comes in as a prop.
 const CLEARABLE = [
   ['pill', 'Clear teams', 'Remove all team markers from the map?'],
   ['marker', 'Clear markers'],
   ['drawing', 'Clear drawings']
 ]
 
+// draw-group slots, top to bottom; the shapes menu button is slot 4
+const TOOL_SLOTS = ['select', 'pen', 'arrow', 'carrow', null, 'erase']
+
+// The map's tool chrome, laid over the canvas: a vertical tool rail (left),
+// a line-style strip while a drawing tool is active, and a view dock (zoom,
+// PNG export, shortcuts; top right). Purely presentational — every action
+// comes in as a prop.
 export default function CanvasToolbar({
   editLayout,
   tool,
@@ -92,44 +101,45 @@ export default function CanvasToolbar({
   onExportPng
 }) {
   const toggle = (m) => setMenu((v) => (v === m ? null : m))
+  // a click anywhere outside the open dropdown (map included) closes it
+  useEffect(() => {
+    if (!menu) return
+    const onDown = (e) => {
+      if (!e.target.closest?.('.ctb-menu')) setMenu(null)
+    }
+    window.addEventListener('pointerdown', onDown)
+    return () => window.removeEventListener('pointerdown', onDown)
+  }, [menu, setMenu])
+  // the brass pill behind the active tool slides to this slot
+  const slot = isShapeTool ? 4 : TOOL_SLOTS.indexOf(tool)
+  const toolBtn = (t, Icon, label) => (
+    <button
+      className={'dock-btn' + (tool === t ? ' on' : '')}
+      onClick={() => setTool(t)}
+      title={`${label} (${KEY_OF[t]})`}
+      aria-pressed={tool === t}
+    >
+      <Icon />
+    </button>
+  )
+  const clearable = CLEARABLE.filter(([t]) => counts[t] > 0)
+
   return (
-    <div className="canvas-toolbar">
+    <>
       {!editLayout && (
-        <>
-          <div className="ctb-group">
-            <button
-              className={'dock-btn' + (tool === 'select' ? ' on' : '')}
-              onClick={() => setTool('select')}
-              title="Select / pan (V)"
-            >
-              <IconCursor />
-            </button>
-            <button
-              className={'dock-btn' + (tool === 'pen' ? ' on' : '')}
-              onClick={() => setTool('pen')}
-              title="Freehand draw (D)"
-            >
-              <IconPencil />
-            </button>
-            <button
-              className={'dock-btn' + (tool === 'arrow' ? ' on' : '')}
-              onClick={() => setTool('arrow')}
-              title="Arrow (A)"
-            >
-              <IconArrow />
-            </button>
-            <button
-              className={'dock-btn' + (tool === 'carrow' ? ' on' : '')}
-              onClick={() => setTool('carrow')}
-              title="Curved arrow (G)"
-            >
-              <IconArrowCurve />
-            </button>
+        <nav className="tool-rail" aria-label="Map tools">
+          <div className="ctb-group ctb-tools" style={{ '--slot': slot }}>
+            <span className="ctb-indicator" aria-hidden="true" hidden={slot < 0} />
+            {toolBtn('select', IconCursor, 'Select / pan')}
+            {toolBtn('pen', IconPencil, 'Freehand draw')}
+            {toolBtn('arrow', IconArrow, 'Arrow')}
+            {toolBtn('carrow', IconArrowCurve, 'Curved arrow')}
             <div className="ctb-menu">
               <button
-                className={'dock-btn' + (isShapeTool || menu === 'shape' ? ' on' : '')}
+                className={'dock-btn' + (isShapeTool ? ' on' : '') + (menu === 'shape' ? ' open' : '')}
                 onClick={() => toggle('shape')}
-                title="Shapes — rectangle (R), ellipse (C), triangle (T), line (L)"
+                title="Shapes"
+                aria-expanded={menu === 'shape'}
               >
                 <IconShapes />
               </button>
@@ -148,31 +158,25 @@ export default function CanvasToolbar({
                       >
                         <Icon />
                         {SHAPE_META[s].label}
+                        <kbd>{KEY_OF[s]}</kbd>
                       </button>
                     )
                   })}
                 </div>
               )}
             </div>
-            <button
-              className={'dock-btn' + (tool === 'erase' ? ' on' : '')}
-              onClick={() => setTool('erase')}
-              title="Eraser — click or drag over lines to delete (E)"
-            >
-              <IconEraser />
-            </button>
+            {toolBtn('erase', IconEraser, 'Eraser — click or drag over lines')}
           </div>
-
-          <span className="ctb-div" />
 
           <div className="ctb-group">
             <div className="ctb-menu">
               <button
-                className={'dock-btn' + (menu === 'marker' ? ' on' : '')}
+                className={'dock-btn' + (menu === 'marker' ? ' open' : '')}
                 onClick={() => toggle('marker')}
                 title="Objective markers"
+                aria-expanded={menu === 'marker'}
               >
-                <IconFlag />
+                <IconTarget />
               </button>
               {menu === 'marker' && (
                 <div className="ctb-drop">
@@ -200,57 +204,53 @@ export default function CanvasToolbar({
             </button>
           </div>
 
-          <span className="ctb-div" />
-
           <div className="ctb-group">
             <button
               className={'dock-btn' + (phasesOpen ? ' on' : '')}
               onClick={togglePhases}
               title="Plan phases (animation)"
+              aria-pressed={phasesOpen}
             >
               <IconTimeline />
             </button>
             <button className="dock-btn" onClick={toggleEditLayout} title="Edit map layout">
               <IconLayers />
             </button>
-          </div>
-        </>
-      )}
-
-      {!editLayout && CLEARABLE.some(([t]) => counts[t] > 0) && (
-        <>
-          <span className="ctb-div" />
-          <div className="ctb-menu">
-            <button
-              className={'dock-btn' + (menu === 'clear' ? ' on' : '')}
-              onClick={() => toggle('clear')}
-              title="Clear items"
-            >
-              <IconTrash />
-            </button>
-            {menu === 'clear' && (
-              <div className="ctb-drop ctb-drop--right">
-                {CLEARABLE.filter(([t]) => counts[t] > 0).map(([t, label, ask]) => (
-                  <button
-                    key={t}
-                    className="ctb-drop-item"
-                    onClick={() => {
-                      if (!ask || confirm(ask)) onClear(t)
-                      setMenu(null)
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
+            {clearable.length > 0 && (
+              <div className="ctb-menu">
+                <button
+                  className={'dock-btn danger' + (menu === 'clear' ? ' open' : '')}
+                  onClick={() => toggle('clear')}
+                  title="Clear items"
+                  aria-expanded={menu === 'clear'}
+                >
+                  <IconTrash />
+                </button>
+                {menu === 'clear' && (
+                  <div className="ctb-drop">
+                    {clearable.map(([t, label, ask]) => (
+                      <button
+                        key={t}
+                        className="ctb-drop-item"
+                        onClick={() => {
+                          if (!ask || confirm(ask)) onClear(t)
+                          setMenu(null)
+                        }}
+                      >
+                        {label}
+                        <span className="count-badge">{counts[t]}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </>
+        </nav>
       )}
 
-      <span className="ctb-spacer" />
       {!editLayout && (tool === 'pen' || tool === 'arrow' || isShapeTool) && (
-        <div className="ctb-group ctb-draw">
+        <div className="draw-opts" role="group" aria-label="Line style">
           {DRAW_COLORS.map((c) => (
             <button
               key={c}
@@ -258,28 +258,29 @@ export default function CanvasToolbar({
               style={{ background: c }}
               onClick={() => setDrawColor(c)}
               title="Colour"
+              aria-pressed={drawColor === c}
             />
           ))}
           <span className="ctb-div" />
           {DRAW_WIDTHS.map((w) => (
             <button
               key={w.value}
-              className={'tiny' + (drawWidth === w.value ? ' primary' : ' ghost')}
+              className={'width-btn' + (drawWidth === w.value ? ' on' : '')}
               onClick={() => setDrawWidth(w.value)}
+              title={`Line width ${w.label}`}
+              aria-pressed={drawWidth === w.value}
             >
-              {w.label}
+              <span style={{ height: Math.max(2, w.value / 2) }} />
             </button>
           ))}
         </div>
       )}
-      <span className="ctb-spacer" />
 
-      <span className="ctb-div" />
-      <div className="ctb-group">
+      <div className="view-dock" role="group" aria-label="View">
         <button className="dock-btn" onClick={() => zoomBy(1 / 1.2)} title="Zoom out">
           <IconMinus />
         </button>
-        <button className="zoom-val" onClick={() => zoomTo(1)} title="Reset zoom">
+        <button className="zoom-val" onClick={() => zoomTo(1)} title="Reset zoom (Ctrl+0)">
           {zoomPct}%
         </button>
         <button className="dock-btn" onClick={() => zoomBy(1.2)} title="Zoom in">
@@ -288,36 +289,36 @@ export default function CanvasToolbar({
         <button className="dock-btn" onClick={() => fit()} title="Fit to screen">
           <IconFit />
         </button>
-      </div>
-
-      {!editLayout && (
-        <>
-          <span className="ctb-div" />
-          <button className="dock-btn" onClick={onExportPng} title="Export the board as a PNG">
-            <IconImage />
-          </button>
-          <div className="ctb-menu">
-            <button
-              className={'dock-btn' + (menu === 'keys' ? ' on' : '')}
-              onClick={() => toggle('keys')}
-              title="Keyboard shortcuts"
-            >
-              <IconHelp />
+        {!editLayout && (
+          <>
+            <span className="ctb-div" />
+            <button className="dock-btn" onClick={onExportPng} title="Export the board as a PNG">
+              <IconImage />
             </button>
-            {menu === 'keys' && (
-              <div className="ctb-drop ctb-drop--right shortcuts-pop">
-                <div className="shortcuts-title">Keyboard shortcuts</div>
-                {SHORTCUTS.map(([key, label]) => (
-                  <div className="shortcuts-row" key={key}>
-                    <kbd>{key}</kbd>
-                    <span>{label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+            <div className="ctb-menu">
+              <button
+                className={'dock-btn' + (menu === 'keys' ? ' open' : '')}
+                onClick={() => toggle('keys')}
+                title="Keyboard shortcuts"
+                aria-expanded={menu === 'keys'}
+              >
+                <IconHelp />
+              </button>
+              {menu === 'keys' && (
+                <div className="ctb-drop ctb-drop--right shortcuts-pop">
+                  <div className="shortcuts-title">Keyboard shortcuts</div>
+                  {SHORTCUTS.map(([key, label]) => (
+                    <div className="shortcuts-row" key={key}>
+                      <kbd>{key}</kbd>
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
   )
 }
