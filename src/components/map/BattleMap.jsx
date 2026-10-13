@@ -20,9 +20,25 @@ import LayoutEditorPanel from './LayoutEditorPanel.jsx'
 import PhasesBar from './PhasesBar.jsx'
 import CanvasToolbar, { TOOL_KEYS } from './CanvasToolbar.jsx'
 import { useCamera } from './useCamera.js'
+import { CANVAS } from './canvasTheme.jsx'
 import { useDrawTool } from './useDrawTool.js'
 import { startFrame, frameAt, totalDuration, phaseArrivalTime } from '../../lib/playback.js'
 import { downloadBoardImage } from '../../lib/strategyFile.js'
+import { withUndo } from '../../lib/toast.js'
+
+// The view centre, stepped down / up a row at a time (60 map px) until no
+// other piece sits within a pill-sized box (±100 × ±46), so pieces placed by
+// button stack into a readable column instead of on one spot. `skip` ignores
+// an item's own current position.
+function freeSpot(c, items, skip) {
+  const near = (p) =>
+    items.some((i) => i.id !== skip && Math.abs(i.x - p.x) < 100 && Math.abs(i.y - p.y) < 46)
+  for (let k = 0; k < 12; k++) {
+    const p = { x: c.x, y: c.y + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 60 }
+    if (!near(p)) return p
+  }
+  return c
+}
 
 const PB_CLOSED = { open: false, playing: false, phaseId: null, t: 0 }
 const NEW_ITEM = {
@@ -43,6 +59,16 @@ export default function BattleMap() {
   const [drawWidth, setDrawWidth] = useState(DRAW_WIDTHS[1].value)
   const [menu, setMenu] = useState(null) // open toolbar dropdown
   const [sel, setSel] = useState(null) // selected item id
+  // Canvas text is measured when drawn; if Geist arrives after the first
+  // paint, remount the text-bearing layer so labels re-measure in it.
+  const [fontsReady, setFontsReady] = useState(false)
+  useEffect(() => {
+    if (!document.fonts) return setFontsReady(true)
+    Promise.all([
+      document.fonts.load(`600 13px ${CANVAS.font}`),
+      document.fonts.load(`600 26px ${CANVAS.mono}`)
+    ]).finally(() => setFontsReady(true))
+  }, [])
   const [editId, setEditId] = useState(null) // note whose text is being edited
   const draw = useDrawTool({
     tool,
@@ -194,9 +220,24 @@ export default function BattleMap() {
     if (squadId) act().placePill(squadId, clampToMap(cam.clientToMap(e.clientX, e.clientY)))
   }
 
+  // a team card's "Place on the map" button: drop the team at the view centre
+  const placeRef = useRef(null)
+  placeRef.current = (squadId) => {
+    if (editLayout) return
+    act().placePill(squadId, clampToMap(freeSpot(cam.centerMap(), act().strategy.items, squadId)))
+    setTool('select')
+    setSel(squadId)
+  }
+  useEffect(() => {
+    const onPlace = (e) => placeRef.current(e.detail)
+    window.addEventListener('gw:place-squad', onPlace)
+    return () => window.removeEventListener('gw:place-squad', onPlace)
+  }, [])
+
   // toolbar "add": a marker / note / timer at the centre of the view
   function addAt(type, extra) {
-    const id = act().addItem({ type, ...cam.centerMap(), ...NEW_ITEM[type], ...extra })
+    const at = freeSpot(cam.centerMap(), act().strategy.items)
+    const id = act().addItem({ type, ...at, ...NEW_ITEM[type], ...extra })
     setSel(id)
     if (type === 'note') setEditId(id)
   }
@@ -287,7 +328,7 @@ export default function BattleMap() {
               {draw.draft && <DrawingShape drawing={{ ...draw.draft, id: 'draft' }} live />}
             </Layer>
 
-            <Layer listening={interactive}>
+            <Layer listening={interactive} key={fontsReady ? 'fonts' : 'fallback'}>
               {trailFrom && (
                 <Group listening={false}>
                   {byType.pill.filter(shown).map((p) => {
@@ -314,7 +355,7 @@ export default function BattleMap() {
                           radius={11}
                           fill={color}
                           opacity={0.45}
-                          stroke="#0c0e12"
+                          stroke={CANVAS.ink}
                           strokeWidth={1.5}
                         />
                       </Group>
@@ -390,7 +431,16 @@ export default function BattleMap() {
           setDrawWidth={setDrawWidth}
           zoomPct={Math.round(view.zoom * 100)}
           onAdd={addAt}
-          onClear={act().clearItems}
+          onClear={(type) => {
+            const n = byType[type].length
+            const s = n === 1 ? '' : 's'
+            const msg = {
+              pill: `Took ${n} team${s} off the map`,
+              marker: `Cleared ${n} marker${s}`,
+              drawing: `Cleared ${n} drawing${s}`
+            }[type]
+            withUndo(msg, () => act().clearItems(type))
+          }}
           togglePhases={togglePhases}
           toggleEditLayout={toggleEditLayout}
           zoomBy={cam.zoomBy}
@@ -403,7 +453,7 @@ export default function BattleMap() {
 
         {!editLayout && !pb.open && Object.values(byType).every((a) => !a.length) && (
           <div className="map-hint" role="note">
-            Drag a team onto the map from a roster, or pick a drawing tool on the left.
+            Drag a team onto the map (or tap its pin), or pick a drawing tool on the left.
           </div>
         )}
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Group, Line, Arrow, Rect, Ellipse, Circle } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { SHAPE_TOOLS, withAlpha, curvedArrowAnchors } from '../../lib/tacticalDefs.js'
+import { CANVAS } from './canvasTheme.jsx'
 
 // One committed drawing: freehand line, straight/curved arrow, or a basic shape
 // (rounded rectangle / ellipse / triangle / straight line). Shapes + straight
@@ -62,7 +63,7 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
     lineCap: 'round',
     lineJoin: 'round',
     hitStrokeWidth: Math.max(16, drawing.width * 3),
-    shadowColor: selected ? '#c9a35f' : undefined,
+    shadowColor: selected ? CANVAS.accent : undefined,
     shadowBlur: selected ? 12 : 0,
     shadowOpacity: selected ? 0.9 : 0
   }
@@ -118,7 +119,7 @@ export default function DrawingShape({ drawing, live = false, selected = false, 
             y={storedAy}
             radius={9}
             fill="#fff"
-            stroke="#c9a35f"
+            stroke={CANVAS.accent}
             strokeWidth={2.5}
             shadowColor="#000"
             shadowBlur={4}

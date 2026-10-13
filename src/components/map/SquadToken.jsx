@@ -4,6 +4,7 @@ import { useStore } from '../../store/useStore.js'
 import { squadStats, squadLabel } from '../../lib/selectors.js'
 import { ROLES, pillColor } from '../../lib/schema.js'
 import { clampToMap } from '../../lib/mapLayout.js'
+import { CANVAS } from './canvasTheme.jsx'
 
 const H = 28
 const FONT = 13
@@ -68,7 +69,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
     return (
       <Group {...dragProps}>
         {selected && (
-          <Circle radius={DISC_R + 6} stroke="#c9a35f" strokeWidth={2} dash={[5, 4]} listening={false} />
+          <Circle radius={DISC_R + 6} stroke={CANVAS.accent} strokeWidth={2} dash={[5, 4]} listening={false} />
         )}
         <Circle
           radius={DISC_R}
@@ -80,6 +81,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
           shadowOpacity={0.4}
         />
         <Text
+          fontFamily={CANVAS.font}
           x={-DISC_R}
           y={-6}
           width={DISC_R * 2}
@@ -87,7 +89,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
           text={String(squad.targetSize)}
           fontSize={13}
           fontStyle="bold"
-          fill="#0c0e12"
+          fill={CANVAS.ink}
           listening={false}
         />
       </Group>
@@ -121,7 +123,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
           width={w + 10}
           height={H + 10}
           cornerRadius={H / 2 + 5}
-          stroke="#c9a35f"
+          stroke={CANVAS.accent}
           strokeWidth={2}
           dash={[5, 4]}
           listening={false}
@@ -134,7 +136,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
         width={w}
         height={H}
         cornerRadius={H / 2}
-        fill="rgba(12,14,18,0.94)"
+        fill={CANVAS.glass}
         stroke={pillCol}
         strokeWidth={2.5}
         shadowColor={pillCol}
@@ -153,13 +155,14 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
       />
 
       <Text
+        fontFamily={CANVAS.font}
         x={left + PAD_X}
         y={-FONT / 2}
         width={w - PAD_X * 2 - BADGE_W}
         text={name}
         fontSize={FONT}
         fontStyle="bold"
-        fill="#f2f4f8"
+        fill={CANVAS.text}
         ellipsis
         wrap="none"
         listening={false}
@@ -172,11 +175,12 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
         height={18}
         cornerRadius={9}
         fill={squad.color}
-        stroke="#0c0e12"
+        stroke={CANVAS.ink}
         strokeWidth={1}
         listening={false}
       />
       <Text
+        fontFamily={CANVAS.font}
         x={w / 2 - PAD_X - BADGE_W + 6}
         y={-6}
         width={BADGE_W}
@@ -184,7 +188,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
         text={String(fill)}
         fontSize={11}
         fontStyle="bold"
-        fill="#0c0e12"
+        fill={CANVAS.ink}
         listening={false}
       />
 
@@ -196,12 +200,13 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
             width={subW}
             height={17}
             cornerRadius={5}
-            fill="rgba(12,14,18,0.92)"
+            fill={CANVAS.glass}
             stroke={pillCol}
             strokeWidth={1}
             listening={false}
           />
           <Text
+            fontFamily={CANVAS.font}
             x={-subW / 2}
             y={H / 2 + 6}
             width={subW}
@@ -209,7 +214,7 @@ function SquadToken({ squad, x, y, selected = false, onSelect, locked = false })
             text={subtitle}
             fontSize={SUB_FONT}
             fontStyle="bold"
-            fill="#eef1f6"
+            fill={CANVAS.text}
             listening={false}
           />
         </>

@@ -621,6 +621,13 @@ input[type='range']:focus-visible::-moz-range-thumb {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.strat-rename {
+  flex: 1;
+  min-width: 0;
+  margin: 2px;
+  padding: 6px 7px;
+  font-weight: 500;
+}
 .strat-pop li.on .strat-name {
   color: var(--accent-2);
 }
@@ -918,17 +925,22 @@ input[type='range']:focus-visible::-moz-range-thumb {
 
 .squad > header {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto auto;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 7px 8px 7px 9px;
 }
+.squad > header .place,
 .squad > header .dup,
 .squad > header .rm,
 .player .rm {
   color: var(--text-faint);
   padding: 5px;
 }
+.squad > header .place.on {
+  color: var(--team, var(--accent-2));
+}
+.squad > header .place:hover,
 .squad > header .dup:hover {
   color: var(--accent-2);
   background: transparent;
@@ -1511,6 +1523,12 @@ input[type='range']:focus-visible::-moz-range-thumb {
   font-weight: 600;
   animation: chip-pop 0.4s var(--spring-out);
 }
+.pb-rename {
+  width: 130px;
+  cursor: text;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
 .pb-chip.add {
   background: var(--surface-2);
   border-style: dashed;
@@ -1796,6 +1814,73 @@ input[type='range']:focus-visible::-moz-range-thumb {
   border-color: var(--surface-3);
 }
 
+/* ---- toasts (components/Toaster.jsx) ------------------------------ */
+.toaster {
+  position: fixed;
+  top: 68px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 14px;
+  font-size: 13px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface-3) 92%, transparent);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+  animation: toast-drop 0.45s var(--spring-out);
+}
+.toast > svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--ok);
+}
+.toast.error {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.toast.error > svg {
+  color: var(--danger);
+}
+.toast-msg {
+  text-wrap: pretty;
+}
+.toast-action {
+  --btn-bg: var(--accent-soft);
+  --btn-bd: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent-2);
+  font-weight: 600;
+}
+.toast-action:hover {
+  --btn-bg: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent-2);
+}
+.toast-close {
+  padding: 6px;
+  color: var(--text-faint);
+}
+@keyframes toast-drop {
+  from {
+    opacity: 0;
+    translate: 0 -12px;
+    scale: 0.96;
+  }
+}
+
 /* ---- PWA update toast --------------------------------------------- */
 .update-toast {
   position: fixed;
@@ -2061,6 +2146,9 @@ input[type='range']:focus-visible::-moz-range-thumb {
   }
   .roster {
     width: 90vw;
+  }
+  .toaster {
+    top: 112px; /* below the two-row top bar */
   }
   /* line-style strip drops below the view dock's row */
   .draw-opts {

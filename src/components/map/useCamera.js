@@ -77,8 +77,13 @@ export function useCamera(wrapRef, stageRef) {
     const r = stageRef.current.container().getBoundingClientRect()
     return screenToMap({ x: clientX - r.left, y: clientY - r.top })
   }
-  const centerMap = () =>
-    clampToMap(screenToMap({ x: sizeRef.current.w / 2, y: sizeRef.current.h / 2 }))
+  // falls back to the wrapper's own size if the ResizeObserver hasn't
+  // reported yet (first frame / background tab)
+  const centerMap = () => {
+    const w = sizeRef.current.w || wrapRef.current?.clientWidth || 0
+    const h = sizeRef.current.h || wrapRef.current?.clientHeight || 0
+    return clampToMap(screenToMap({ x: w / 2, y: h / 2 }))
+  }
 
   return { size, fit, zoomTo, zoomBy, onWheel, onStageDragEnd, pointerMap, clientToMap, centerMap }
 }

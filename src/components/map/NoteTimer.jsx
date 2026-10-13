@@ -2,6 +2,7 @@ import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Group, Rect, Text, Circle, Line } from 'react-konva'
 import { useStore } from '../../store/useStore.js'
 import { NOTE_COLORS, fmtClock } from '../../lib/tacticalDefs.js'
+import { CANVAS, CanvasIcon } from './canvasTheme.jsx'
 
 // Sticky notes and countdown timers, drawn in Konva like everything else so
 // they pan/zoom with the map and land in PNG / video exports. Each card is
@@ -16,10 +17,21 @@ const NOTE_MIN_H = 72
 const TIMER_W = 132
 const TIMER_H = 92
 const stop = (e) => (e.cancelBubble = true)
+const PAPER_INK = '#1b1810'
 const tap = (fn) => ({
   onClick: (e) => (stop(e), fn()),
   onTap: (e) => (stop(e), fn())
 })
+
+// Small ✕ in a card's header bar, with a full-height hit area.
+function CloseButton({ x, color, onPress }) {
+  return (
+    <Group x={x} {...tap(onPress)}>
+      <Rect width={BAR} height={BAR} fill="transparent" />
+      <CanvasIcon name="x" x={4} y={4} size={12} color={color} />
+    </Group>
+  )
+}
 
 // Shared card behaviour: drag to move (routed to the phase being edited),
 // click to select.
@@ -64,7 +76,7 @@ export const NoteItem = memo(function NoteItem(props) {
         height={h}
         fill={note.color}
         cornerRadius={9}
-        stroke={selected ? '#c9a35f' : 'rgba(0,0,0,0.32)'}
+        stroke={selected ? CANVAS.accent : 'rgba(0,0,0,0.32)'}
         strokeWidth={selected ? 2 : 1}
         shadowColor="#000"
         shadowBlur={16}
@@ -72,7 +84,7 @@ export const NoteItem = memo(function NoteItem(props) {
         shadowOpacity={0.45}
       />
       <Rect width={w} height={BAR} fill="rgba(0,0,0,0.16)" cornerRadius={[9, 9, 0, 0]} />
-      <Text x={6} y={4} text="⠿" fontSize={12} fill="rgba(0,0,0,0.45)" listening={false} />
+      <CanvasIcon name="grip" x={3} y={3} size={14} color="rgba(0,0,0,0.4)" />
       {NOTE_COLORS.map((c, i) => (
         <Circle
           key={c}
@@ -80,27 +92,21 @@ export const NoteItem = memo(function NoteItem(props) {
           y={BAR / 2}
           radius={5.5}
           fill={c}
-          stroke={c === note.color ? '#1b1810' : 'rgba(0,0,0,0.3)'}
+          stroke={c === note.color ? PAPER_INK : 'rgba(0,0,0,0.3)'}
           strokeWidth={c === note.color ? 1.5 : 1}
           {...tap(() => updateItem(note.id, { color: c }))}
         />
       ))}
-      <Text
-        x={w - 17}
-        y={4}
-        text="✕"
-        fontSize={12}
-        fill="rgba(0,0,0,0.55)"
-        {...tap(() => removeItem(note.id))}
-      />
+      <CloseButton x={w - BAR} color="rgba(0,0,0,0.55)" onPress={() => removeItem(note.id)} />
       {!editing && (
         <Text
+          fontFamily={CANVAS.font}
           x={8}
           y={BAR + 7}
           width={w - 16}
           height={h - BAR - 14}
           text={note.text || 'Double-click to write…'}
-          fill={note.text ? '#1b1810' : 'rgba(27,24,16,0.45)'}
+          fill={note.text ? PAPER_INK : 'rgba(27,24,16,0.45)'}
           fontSize={12}
           lineHeight={1.4}
           wrap="word"
@@ -185,16 +191,16 @@ export const TimerItem = memo(function TimerItem(props) {
   }, [running])
 
   const buttons = [
-    [running ? '❚❚' : '▶', () => setRunning((v) => !v)],
+    [running ? 'pause' : 'play', () => setRunning((v) => !v)],
     [
-      '⟲',
+      'reset',
       () => {
         setRunning(false)
         setRemaining(timer.seconds)
       }
     ],
-    ['−', () => updateItem(timer.id, { seconds: Math.max(5, timer.seconds - 10) })],
-    ['+', () => updateItem(timer.id, { seconds: timer.seconds + 10 })]
+    ['minus', () => updateItem(timer.id, { seconds: Math.max(5, timer.seconds - 10) })],
+    ['plus', () => updateItem(timer.id, { seconds: timer.seconds + 10 })]
   ]
   const bw = (TIMER_W - 10 - 9) / 4
 
@@ -203,32 +209,39 @@ export const TimerItem = memo(function TimerItem(props) {
       <Rect
         width={TIMER_W}
         height={TIMER_H}
-        fill="#15181f"
-        cornerRadius={9}
-        stroke={selected ? '#c9a35f' : '#2d3d3f'}
+        fill={CANVAS.surface}
+        cornerRadius={10}
+        stroke={selected ? CANVAS.accent : CANVAS.border}
         strokeWidth={selected ? 2 : 1}
         shadowColor="#000"
         shadowBlur={16}
         shadowOffsetY={5}
         shadowOpacity={0.5}
       />
-      <Rect width={TIMER_W} height={BAR} fill="rgba(255,255,255,0.05)" cornerRadius={[9, 9, 0, 0]} />
-      <Text x={6} y={4} text="⠿" fontSize={12} fill="#626a7c" listening={false} />
-      <Text x={TIMER_W - 17} y={4} text="✕" fontSize={12} fill="#626a7c" {...tap(() => removeItem(timer.id))} />
+      <Rect width={TIMER_W} height={BAR} fill="rgba(255,255,255,0.04)" cornerRadius={[10, 10, 0, 0]} />
+      <CanvasIcon name="grip" x={3} y={3} size={14} color={CANVAS.faint} />
+      <CloseButton x={TIMER_W - BAR} color={CANVAS.faint} onPress={() => removeItem(timer.id)} />
       <Text
         y={BAR + 5}
         width={TIMER_W}
         align="center"
         text={fmtClock(remaining)}
-        fontSize={27}
-        fontStyle="bold"
-        fill={remaining === 0 ? '#f87171' : '#eceef4'}
+        fontSize={26}
+        fontFamily={CANVAS.mono}
+        fontStyle="600"
+        fill={remaining === 0 ? CANVAS.danger : CANVAS.text}
         listening={false}
       />
-      {buttons.map(([glyph, fn], i) => (
+      {buttons.map(([icon, fn], i) => (
         <Group key={i} x={5 + i * (bw + 3)} y={TIMER_H - 29} {...tap(fn)}>
-          <Rect width={bw} height={24} fill="#1c202a" stroke="#313747" cornerRadius={6} />
-          <Text width={bw} y={6} align="center" text={glyph} fontSize={12} fill="#eceef4" listening={false} />
+          <Rect
+            width={bw}
+            height={24}
+            fill={i === 0 ? CANVAS.accent : CANVAS.surface3}
+            stroke={i === 0 ? CANVAS.accent : CANVAS.border}
+            cornerRadius={6}
+          />
+          <CanvasIcon name={icon} x={bw / 2 - 6} y={6} size={12} color={i === 0 ? CANVAS.ink : CANVAS.text} />
         </Group>
       ))}
     </Group>

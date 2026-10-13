@@ -4,6 +4,7 @@ import { downloadStrategy, readStrategyFile } from '../lib/strategyFile.js'
 import { shareUrl } from '../lib/shareLink.js'
 import { SIDE_META } from '../lib/schema.js'
 import StrategyMenu from './StrategyMenu.jsx'
+import { toast, toastError } from '../lib/toast.js'
 import {
   IconBanner,
   IconUndo,
@@ -61,8 +62,9 @@ export default function TopBar({ panels, onTogglePanel }) {
     if (!file) return
     try {
       loadStrategy(await readStrategyFile(file))
+      toast(`Imported “${getStrategy().meta.name}”`)
     } catch (err) {
-      alert(err.message)
+      toastError(`Couldn’t import ${file.name}: ${err.message}`)
     }
   }
 

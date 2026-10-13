@@ -10,6 +10,7 @@ import { MARKER_KINDS, DRAW_TOOL_LABEL, PATH_TOOLS } from '../../lib/tacticalDef
 import { squadLabel } from '../../lib/selectors.js'
 import { downloadAnimation } from '../../lib/strategyFile.js'
 import { recordBoardVideo, videoRecordingSupported } from '../../lib/recordBoard.js'
+import { toast, toastError, withUndo } from '../../lib/toast.js'
 import {
   IconPlay,
   IconPause,
@@ -56,7 +57,8 @@ async function exportAnimation(stage, phases, name) {
   const { setPlayback } = useStore.getState()
   const total = totalDuration(phases)
   if (!total || !stage) return
-  if (!videoRecordingSupported()) return alert('Video recording isn’t supported in this browser.')
+  if (!videoRecordingSupported())
+    return toastError('This browser can’t record video. Try Chrome or Edge.')
   const restore = { ...useStore.getState().playback }
   try {
     setPlayback({ open: true, phaseId: null, playing: false, t: 0 })
@@ -75,8 +77,9 @@ async function exportAnimation(stage, phases, name) {
       })
     )
     downloadAnimation(blob, name)
+    toast('Animation saved as a video')
   } catch (err) {
-    alert(err.message || 'Recording failed')
+    toastError(`Recording failed: ${err.message || 'unknown error'}`)
   } finally {
     setPlayback(restore)
   }
@@ -129,6 +132,7 @@ export default function PhasesBar({ stageRef }) {
   const togglePhaseHidden = useStore((s) => s.togglePhaseHidden)
   usePlaybackClock(pb.playing, phases)
 
+  const [renaming, setRenaming] = useState(null) // phase id being renamed in place
   const [visOpen, setVisOpen] = useState(false)
   const [pathsOpen, setPathsOpen] = useState(false)
   const [dragId, setDragId] = useState(null)
@@ -222,39 +226,56 @@ export default function PhasesBar({ stageRef }) {
           >
             Start
           </button>
-          {phases.map((p, i) => (
-            <button
-              key={p.id}
-              className={
-                'pb-chip' +
-                (chipActive(i) ? ' on' : '') +
-                (dropIdx === i && dragId && dragId !== p.id ? ' drop' : '')
-              }
-              draggable
-              onDragStart={(e) => {
-                setDragId(p.id)
-                e.dataTransfer.effectAllowed = 'move'
-              }}
-              onDragEnd={() => {
-                setDragId(null)
-                setDropIdx(null)
-              }}
-              onDragOver={(e) => {
-                if (dragId) {
-                  e.preventDefault()
-                  setDropIdx(i)
+          {phases.map((p, i) =>
+            renaming === p.id ? (
+              <input
+                key={p.id}
+                className="pb-chip pb-rename"
+                defaultValue={p.name}
+                autoFocus
+                onFocus={(e) => e.target.select()}
+                onBlur={(e) => {
+                  const n = e.target.value.trim()
+                  if (n && n !== p.name) renamePhase(p.id, n)
+                  setRenaming(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') e.currentTarget.value = p.name
+                  if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur()
+                }}
+                aria-label="Phase name"
+              />
+            ) : (
+              <button
+                key={p.id}
+                className={
+                  'pb-chip' +
+                  (chipActive(i) ? ' on' : '') +
+                  (dropIdx === i && dragId && dragId !== p.id ? ' drop' : '')
                 }
-              }}
-              onClick={() => selectPhase(p.id)}
-              onDoubleClick={() => {
-                const n = prompt('Rename phase', p.name)
-                if (n && n.trim()) renamePhase(p.id, n.trim())
-              }}
-              title="click to edit · double-click to rename · drag to reorder"
-            >
-              {p.name}
-            </button>
-          ))}
+                draggable
+                onDragStart={(e) => {
+                  setDragId(p.id)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragEnd={() => {
+                  setDragId(null)
+                  setDropIdx(null)
+                }}
+                onDragOver={(e) => {
+                  if (dragId) {
+                    e.preventDefault()
+                    setDropIdx(i)
+                  }
+                }}
+                onClick={() => selectPhase(p.id)}
+                onDoubleClick={() => setRenaming(p.id)}
+                title="Click to edit, double-click to rename, drag to reorder"
+              >
+                {p.name}
+              </button>
+            )
+          )}
           <button
             className="pb-chip add"
             title="Add a phase after the current one, seeded from it"
@@ -470,7 +491,7 @@ export default function PhasesBar({ stageRef }) {
           <button
             className="tiny ghost danger"
             onClick={() => {
-              if (confirm(`Delete ${selPhase.name}?`)) removePhase(selPhase.id)
+              withUndo(`Deleted ${selPhase.name}`, () => removePhase(selPhase.id))
             }}
           >
             Delete phase

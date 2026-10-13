@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 import { ROLES, LANES, SQUAD_SIZE_PRESETS, TEAM_SWATCHES } from '../../lib/schema.js'
 import { squadStats, squadLabel, squadDefaultName } from '../../lib/selectors.js'
-import { IconCopy, IconX, IconChevronRight, IconGrip, IconWarn, IconPlus, IconMinus, RoleIcon } from '../Icons.jsx'
+import { IconCopy, IconPin, IconX, IconChevronRight, IconGrip, IconWarn, IconPlus, IconMinus, RoleIcon } from '../Icons.jsx'
 import PlayerRow from './PlayerRow.jsx'
+import { withUndo } from '../../lib/toast.js'
+import { drawerMode } from '../../lib/drawerMode.js'
 
 export default function SquadCard({ squad }) {
   const strategy = useStore((s) => s.strategy)
@@ -13,6 +15,16 @@ export default function SquadCard({ squad }) {
   const addPlayer = useStore((s) => s.addPlayer)
   const open = useStore((s) => !s.ui.collapsedTeams[squad.id])
   const toggleTeam = useStore((s) => s.toggleTeam)
+  const onMap = useStore((s) => s.strategy.items.some((i) => i.id === squad.id))
+  const togglePanel = useStore((s) => s.togglePanel)
+
+  // The tap/keyboard alternative to dragging the grip: BattleMap drops the
+  // team at the centre of the view. On narrow screens the drawer closes so
+  // the placement is visible.
+  const placeOnMap = () => {
+    window.dispatchEvent(new CustomEvent('gw:place-squad', { detail: squad.id }))
+    if (drawerMode()) togglePanel(squad.side)
+  }
 
   const { players, byRole, fill, over, warnings } = squadStats(strategy, squad)
   const pct = Math.min(100, squad.targetSize ? (fill / squad.targetSize) * 100 : 0)
@@ -73,6 +85,14 @@ export default function SquadCard({ squad }) {
         </span>
 
         <button
+          className={'tiny ghost place' + (onMap ? ' on' : '')}
+          title={onMap ? 'Move to the centre of the view' : 'Place on the map'}
+          onClick={placeOnMap}
+        >
+          <IconPin />
+        </button>
+
+        <button
           className="tiny ghost dup"
           title="Duplicate this team"
           onClick={() => duplicateSquad(squad.id)}
@@ -85,8 +105,8 @@ export default function SquadCard({ squad }) {
           title="Remove team and all its players"
           onClick={() => {
             const n = players.length
-            if (!n || confirm(`Delete "${label}" and its ${n} player${n === 1 ? '' : 's'}?`))
-              removeSquad(squad.id)
+            const who = n ? ` and its ${n} player${n === 1 ? '' : 's'}` : ''
+            withUndo(`Deleted ${label}${who}`, () => removeSquad(squad.id))
           }}
         >
           <IconX />

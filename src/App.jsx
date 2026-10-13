@@ -4,12 +4,13 @@ import RosterPanel from './components/roster/RosterPanel.jsx'
 import BattleMap from './components/map/BattleMap.jsx'
 import UpdateToast from './components/UpdateToast.jsx'
 import Tooltip from './components/Tooltip.jsx'
+import Toaster from './components/Toaster.jsx'
+import { toast, toastError } from './lib/toast.js'
 import { useStore, doUndo, doRedo } from './store/useStore.js'
 import { downloadStrategy } from './lib/strategyFile.js'
 import { decodeShare, shareCodeInUrl } from './lib/shareLink.js'
+import { drawerMode } from './lib/drawerMode.js'
 
-// keep in step with the drawer breakpoint in global.css
-const drawerMode = () => window.matchMedia('(max-width: 1180px)').matches
 
 export default function App() {
   const panels = useStore((s) => s.ui?.panels) ?? { ally: true, enemy: true }
@@ -38,8 +39,11 @@ export default function App() {
       if (!code) return
       history.replaceState(null, '', location.pathname + location.search)
       decodeShare(code).then(
-        (doc) => useStore.getState().loadStrategy(doc),
-        () => alert('This share link is broken or incomplete.')
+        (doc) => {
+          useStore.getState().loadStrategy(doc)
+          toast(`Opened shared strategy “${useStore.getState().strategy.meta.name}”`)
+        },
+        () => toastError('This share link is broken or incomplete. Ask for a fresh link.')
       )
     }
     openShared()
@@ -88,6 +92,7 @@ export default function App() {
       </div>
       <UpdateToast />
       <Tooltip />
+      <Toaster />
     </div>
   )
 }

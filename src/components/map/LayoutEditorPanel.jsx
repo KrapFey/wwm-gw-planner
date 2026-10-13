@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 import { FIXTURE_KINDS, FIXTURE_KIND_LIST } from '../../lib/mapLayout.js'
+import { toast, toastError } from '../../lib/toast.js'
 
 export default function LayoutEditorPanel({ selectedId, onSelect, onDone }) {
   const fixtures = useStore((s) => s.layout.fixtures)
@@ -20,7 +21,7 @@ export default function LayoutEditorPanel({ selectedId, onSelect, onDone }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
-      alert('Clipboard blocked — use Download instead.')
+      toastError('The browser blocked the clipboard. Use Download instead.')
     }
   }
 
@@ -113,7 +114,12 @@ export default function LayoutEditorPanel({ selectedId, onSelect, onDone }) {
         <button
           className="tiny ghost"
           onClick={() => {
-            if (confirm('Reset all fixtures to the shipped preset?')) resetLayout()
+            const before = useStore.getState().layout
+            resetLayout()
+            toast('Fixtures reset to the default layout', {
+              duration: 8000,
+              action: { label: 'Undo', run: () => useStore.setState({ layout: before }) }
+            })
           }}
         >
           Reset

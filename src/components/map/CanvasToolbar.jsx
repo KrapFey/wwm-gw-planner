@@ -65,7 +65,7 @@ const SHORTCUTS = [
 ]
 
 const CLEARABLE = [
-  ['pill', 'Clear teams', 'Remove all team markers from the map?'],
+  ['pill', 'Clear teams'],
   ['marker', 'Clear markers'],
   ['drawing', 'Clear drawings']
 ]
@@ -92,7 +92,7 @@ export default function CanvasToolbar({
   setDrawWidth,
   zoomPct,
   onAdd, // (type, extra) — marker / note / timer at the view centre
-  onClear, // (type)
+  onClear, // (type) — clears now; the caller offers Undo
   togglePhases,
   toggleEditLayout,
   zoomBy,
@@ -228,12 +228,12 @@ export default function CanvasToolbar({
                 </button>
                 {menu === 'clear' && (
                   <div className="ctb-drop">
-                    {clearable.map(([t, label, ask]) => (
+                    {clearable.map(([t, label]) => (
                       <button
                         key={t}
                         className="ctb-drop-item"
                         onClick={() => {
-                          if (!ask || confirm(ask)) onClear(t)
+                          onClear(t)
                           setMenu(null)
                         }}
                       >

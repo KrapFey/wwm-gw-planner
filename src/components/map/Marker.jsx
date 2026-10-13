@@ -4,6 +4,7 @@ import { useStore } from '../../store/useStore.js'
 import { MARKER_KINDS } from '../../lib/tacticalDefs.js'
 import { clampToMap } from '../../lib/mapLayout.js'
 import MarkerIcon from './MarkerIcon.jsx'
+import { CANVAS } from './canvasTheme.jsx'
 
 const R = 15
 
@@ -17,8 +18,8 @@ function Marker({ marker, x, y, selected, onSelect, locked = false }) {
   const remove = () => removeFromBoard(marker.id)
   const sc = marker.scale || 1
   const rot = marker.rotation || 0
-  const label = (marker.label ?? def.label).toUpperCase()
-  const capW = Math.max(44, label.length * 6 + 14)
+  const label = marker.label || def.label
+  const capW = Math.max(44, label.length * 6.2 + 16)
   const tail = R * 1.95
 
   return (
@@ -60,7 +61,7 @@ function Marker({ marker, x, y, selected, onSelect, locked = false }) {
         <Circle
           radius={R}
           fill={def.color}
-          stroke="#0c0e12"
+          stroke={CANVAS.ink}
           strokeWidth={1.5}
           shadowColor="#000"
           shadowBlur={6}
@@ -77,7 +78,7 @@ function Marker({ marker, x, y, selected, onSelect, locked = false }) {
       {selected && (
         <Circle
           radius={R * sc + 6}
-          stroke="#c9a35f"
+          stroke={CANVAS.accent}
           strokeWidth={2}
           dash={[5, 4]}
           listening={false}
@@ -88,20 +89,21 @@ function Marker({ marker, x, y, selected, onSelect, locked = false }) {
         x={-capW / 2}
         y={tail * sc + 5}
         width={capW}
-        height={15}
-        cornerRadius={7}
-        fill="rgba(12,14,18,0.92)"
+        height={16}
+        cornerRadius={5}
+        fill={CANVAS.glass}
         listening={false}
       />
       <Text
+        fontFamily={CANVAS.font}
         x={-capW / 2}
-        y={tail * sc + 7.5}
+        y={tail * sc + 8}
         width={capW}
         align="center"
         text={label}
-        fontSize={9}
+        fontSize={10}
         fontStyle="bold"
-        fill="#eef1f6"
+        fill={CANVAS.text}
         listening={false}
       />
     </Group>

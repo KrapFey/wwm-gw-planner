@@ -1,6 +1,32 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
+import { toast } from '../lib/toast.js'
 import { IconChevronDown, IconEdit, IconCopy, IconTrash, IconPlus } from './Icons.jsx'
+
+// Delete a strategy right away and offer Undo: the library isn't part of the
+// undo history, so Undo puts the saved doc back in its old slot.
+function deleteWithUndo(id) {
+  const s = useStore.getState()
+  const doc = id === s.activeId ? s.strategy : s.docs[id]
+  const index = s.order.indexOf(id)
+  const wasActive = id === s.activeId
+  s.deleteStrategy(id)
+  if (useStore.getState().docs[id]) return // refused (last strategy)
+  toast(`Deleted “${doc.meta.name || 'Untitled'}”`, {
+    duration: 8000,
+    action: {
+      label: 'Undo',
+      run: () => {
+        useStore.setState((st) => {
+          const order = [...st.order]
+          order.splice(Math.min(index, order.length), 0, id)
+          return { docs: { ...st.docs, [id]: doc }, order }
+        })
+        if (wasActive) useStore.getState().switchStrategy(id)
+      }
+    }
+  })
+}
 
 export default function StrategyMenu() {
   const order = useStore((s) => s.order)
@@ -10,10 +36,10 @@ export default function StrategyMenu() {
   const newStrategy = useStore((s) => s.newStrategy)
   const switchStrategy = useStore((s) => s.switchStrategy)
   const duplicateStrategy = useStore((s) => s.duplicateStrategy)
-  const deleteStrategy = useStore((s) => s.deleteStrategy)
   const renameStrategy = useStore((s) => s.renameStrategy)
 
   const [open, setOpen] = useState(false)
+  const [renaming, setRenaming] = useState(null) // id being renamed in place
   const ref = useRef(null)
 
   useEffect(() => {
@@ -24,9 +50,18 @@ export default function StrategyMenu() {
     window.addEventListener('mousedown', onDoc)
     return () => window.removeEventListener('mousedown', onDoc)
   }, [open])
+  useEffect(() => {
+    if (!open) setRenaming(null)
+  }, [open])
 
   const nameOf = (id) =>
     (id === activeId ? strategy : docs[id])?.meta?.name || 'Untitled'
+
+  const finishRename = (id, value) => {
+    const n = value.trim()
+    if (n && n !== nameOf(id)) renameStrategy(id, n)
+    setRenaming(null)
+  }
 
   return (
     <div className="strat-menu" ref={ref}>
@@ -47,23 +82,32 @@ export default function StrategyMenu() {
           <ul>
             {order.map((id) => (
               <li key={id} className={id === activeId ? 'on' : ''}>
-                <button
-                  className="strat-name"
-                  onClick={() => {
-                    switchStrategy(id)
-                    setOpen(false)
-                  }}
-                >
-                  {nameOf(id)}
-                </button>
-                <button
-                  className="tiny ghost"
-                  title="Rename"
-                  onClick={() => {
-                    const n = prompt('Rename strategy', nameOf(id))
-                    if (n && n.trim()) renameStrategy(id, n.trim())
-                  }}
-                >
+                {renaming === id ? (
+                  <input
+                    className="strat-rename"
+                    defaultValue={nameOf(id)}
+                    autoFocus
+                    onFocus={(e) => e.target.select()}
+                    onBlur={(e) => finishRename(id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') e.currentTarget.value = nameOf(id)
+                      if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur()
+                    }}
+                    aria-label="Strategy name"
+                  />
+                ) : (
+                  <button
+                    className="strat-name"
+                    onClick={() => {
+                      switchStrategy(id)
+                      setOpen(false)
+                    }}
+                    onDoubleClick={() => setRenaming(id)}
+                  >
+                    {nameOf(id)}
+                  </button>
+                )}
+                <button className="tiny ghost" title="Rename" onClick={() => setRenaming(id)}>
                   <IconEdit />
                 </button>
                 <button
@@ -80,9 +124,7 @@ export default function StrategyMenu() {
                   className="tiny ghost danger"
                   title="Delete"
                   disabled={order.length <= 1}
-                  onClick={() => {
-                    if (confirm(`Delete "${nameOf(id)}"?`)) deleteStrategy(id)
-                  }}
+                  onClick={() => deleteWithUndo(id)}
                 >
                   <IconTrash />
                 </button>
