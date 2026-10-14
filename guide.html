@@ -24,7 +24,75 @@
       <a class="g-open" href="./">Open the planner</a>
     </header>
 
-    <div class="g-layout">
+    <section class="g-hero" aria-labelledby="hero-h">
+      <h1 id="hero-h">
+        <span class="g-line"><span>Plan the war <span class="g-slot" data-ui aria-hidden="true"><img src="assets/map.webp" width="1430" height="1100" alt="" /><span class="g-mini g-ally">Vanguard</span><span class="g-mini g-enemy">Raiders</span></span></span></span>
+        <span class="g-line"><span>before the war</span></span>
+      </h1>
+      <p class="g-sub">
+        GW Planner is a battle board for <em>Where Winds Meet</em> guild wars. This guide covers
+        every tool, from your first team to a plan that plays itself.
+      </p>
+      <div class="g-actions">
+        <a class="g-btn" href="./">Open the planner</a>
+        <a class="g-link" href="#content">Read the guide</a>
+      </div>
+    </section>
+
+    <figure class="g-shot g-hero-shot">
+      <img data-shot="overview" src="guide/img/overview.webp" width="1800" height="1125" alt="The planner with both rosters open, teams, arrows and markers on the battle map" loading="eager" />
+    </figure>
+
+    <p class="g-statement">
+      Build both rosters <span class="g-thumb" style="--fp: 50% 8%"><img src="guide/img/roster.webp" alt="" /></span>,
+      put teams on the real map <span class="g-thumb" style="--fp: 0% 28%"><img src="guide/img/pills.webp" alt="" /></span>,
+      draw the calls <span class="g-thumb" style="--fp: 60% 40%"><img src="guide/img/phase-paths.webp" alt="" /></span>
+      and play it back <span class="g-thumb" style="--fp: 50% 50%"><img src="guide/img/phases.webp" alt="" /></span>
+      phase by phase.
+    </p>
+
+    <section class="g-stages" aria-labelledby="stage-h">
+      <div class="g-stage-copy">
+        <h2 id="stage-h" class="g-clause" aria-live="polite">Start: every team at home base</h2>
+        <p>
+          Each stop is a phase, a snapshot of where every team stands. Press play in the planner
+          and the pills move from one phase to the next. Drag the slider to try it.
+        </p>
+        <a class="g-link" href="#phases">How phases work</a>
+      </div>
+      <div class="g-stage-map">
+        <div class="g-board" data-ui role="img" aria-label="Battle map with five team pills">
+          <img src="assets/map.webp" width="1430" height="1100" alt="" loading="lazy" />
+          <img class="g-fx" style="--x: 557; --y: 348" src="assets/tower_blue.png" alt="" loading="lazy" />
+          <img class="g-fx" style="--x: 557; --y: 545" src="assets/tower_blue.png" alt="" loading="lazy" />
+          <img class="g-fx" style="--x: 557; --y: 761" src="assets/tower_blue.png" alt="" loading="lazy" />
+          <img class="g-fx" style="--x: 904; --y: 347" src="assets/tower_red.png" alt="" loading="lazy" />
+          <img class="g-fx" style="--x: 904; --y: 546" src="assets/tower_red.png" alt="" loading="lazy" />
+          <img class="g-fx" style="--x: 904; --y: 747" src="assets/tower_red.png" alt="" loading="lazy" />
+          <span class="g-pill g-att" data-pos="330,420 640,300 830,330 1080,480" style="--x: 330; --y: 420">Vanguard <b>10</b></span>
+          <span class="g-pill g-att" data-pos="330,670 430,700 830,760 1100,640" style="--x: 330; --y: 670">Flankers <b>5</b></span>
+          <span class="g-pill g-def" data-pos="230,550 290,550 330,550 400,560" style="--x: 230; --y: 550">Keep <b>5</b></span>
+          <span class="g-pill g-eatt" data-pos="1110,430 1010,430 770,440 620,450" style="--x: 1110; --y: 430">Raiders <b>8</b></span>
+          <span class="g-pill g-edef" data-pos="1190,610 1190,610 1110,580 1180,560" style="--x: 1190; --y: 610">Wall <b>6</b></span>
+        </div>
+      </div>
+      <div class="g-stage-track" data-ui>
+        <button class="g-play" type="button" aria-label="Play the phases">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor" /></svg>
+        </button>
+        <div class="g-range">
+          <input type="range" min="0" max="3" step="1" value="0" aria-label="Phase" aria-valuetext="Start" />
+          <ol>
+            <li data-clause="Start: every team at home base">Start</li>
+            <li data-clause="Phase 1: Vanguard takes the top lane">Phase 1</li> <!-- taste-skill-ignore: the planner's own phase names -->
+            <li data-clause="Phase 2: both lanes hit the bulwarks">Phase 2</li> <!-- taste-skill-ignore: the planner's own phase names -->
+            <li data-clause="Phase 3: Keep holds, the rest push">Phase 3</li> <!-- taste-skill-ignore: the planner's own phase names -->
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <div class="g-layout" id="content">
       <nav class="g-toc" aria-label="Guide contents">
         <details open>
           <summary>Contents</summary>
@@ -45,27 +113,18 @@
             <li><a href="#offline">Offline, install and updates</a></li>
             <li><a href="#faq">Questions</a></li>
           </ol>
-        </details>
-      </nav>
-
-      <main id="content" class="g-main">
-        <section class="g-hero">
-          <h1>Plan the war before the war</h1>
-          <p class="g-lede">
-            GW Planner is a battle board for <em>Where Winds Meet</em> guild wars. Build both
-            rosters, put teams on the real map, draw the calls, and play the plan back phase by
-            phase. It runs in your browser, works offline, and keeps everything on your device.
-          </p>
           <p class="g-meta">
             Screenshots updated <time data-shots-updated datetime="2026-10-14">October 14, 2026</time>
           </p>
-          <figure class="g-shot g-wide">
-            <img data-shot="overview" src="guide/img/overview.webp" width="1800" height="1125" alt="The planner with both rosters open, teams, arrows and markers on the battle map" loading="eager" />
-          </figure>
-        </section>
+        </details>
+      </nav>
 
+      <main class="g-main">
         <section id="start">
           <h2>Getting started</h2>
+          <figure class="g-shot g-side">
+            <img data-shot="onboarding" src="guide/img/onboarding.webp" width="680" height="574" alt="The getting-started checklist with three steps" loading="lazy" />
+          </figure>
           <p>
             Open the planner and you land on an empty board with a short checklist in the
             bottom-right corner of the map. Each step ticks itself off as you do it, and the
@@ -76,11 +135,8 @@
             <li><strong>Put it on the map.</strong> Drag the team's grip onto the map, or tap its pin.</li>
             <li><strong>Plan a phase.</strong> Open the timeline, add a phase, move teams, press play.</li>
           </ol>
-          <figure class="g-shot g-narrow">
-            <img data-shot="onboarding" src="guide/img/onboarding.webp" width="680" height="574" alt="The getting-started checklist with three steps" loading="lazy" />
-          </figure>
           <p>
-            The checklist disappears once all three steps are done. Close it with <kbd>✕</kbd> to hide
+            The checklist disappears once all three steps are done. Close it with the cross to hide
             it for good in this browser. Everything you do is saved automatically, so you can close
             the tab at any time.
           </p>
@@ -122,7 +178,7 @@
             turns red when you go over. Below it, two tallies count players by role (tank, DPS,
             healer) and by lane (top, mid, bottom).
           </p>
-          <figure class="g-shot g-tall">
+          <figure class="g-shot g-side g-tall">
             <img data-shot="roster" src="guide/img/roster.webp" width="678" height="1682" alt="Our Guild roster with Attack and Defense groups and an expanded team" loading="lazy" />
           </figure>
           <h3>Teams</h3>
@@ -151,7 +207,7 @@
               Yellow warnings point out gaps, such as a team with no healer or no lane.
             </li>
             <li>
-              The copy icon duplicates a team with its players. The ✕ deletes it, and the message
+              The copy icon duplicates a team with its players. The cross deletes it, and the message
               that appears has an <em>Undo</em> button.
             </li>
           </ul>
@@ -189,7 +245,7 @@
             The tool rail on the left of the map holds the drawing tools. The brass highlight
             shows the active tool.
           </p>
-          <figure class="g-shot">
+          <figure class="g-shot g-side">
             <img data-shot="drawing-tools" src="guide/img/drawing-tools.webp" width="730" height="652" alt="The tool rail with the pen active, the shapes menu open and the line-style strip" loading="lazy" />
           </figure>
           <dl class="g-defs">
@@ -220,13 +276,13 @@
 
         <section id="markers">
           <h2>Markers, notes and timers</h2>
+          <figure class="g-shot g-side">
+            <img data-shot="markers" src="guide/img/markers.webp" width="720" height="482" alt="The objective marker menu: Attack, Danger, Defend, Hold, Yes and No" loading="lazy" />
+          </figure>
           <p>
             The second group on the rail adds pieces to the middle of the view. Each new piece steps
             aside so it doesn't land on top of another.
           </p>
-          <figure class="g-shot">
-            <img data-shot="markers" src="guide/img/markers.webp" width="720" height="482" alt="The objective marker menu: Attack, Danger, Defend, Hold, Yes and No" loading="lazy" />
-          </figure>
           <dl class="g-defs">
             <dt>Objective markers</dt>
             <dd>
@@ -407,7 +463,7 @@
             The map's fixed pieces (towers, geese, trees and the boss) can be moved if a game update
             changes them. Click <strong>Edit map layout</strong> on the rail.
           </p>
-          <figure class="g-shot">
+          <figure class="g-shot g-side">
             <img data-shot="layout-editor" src="guide/img/layout-editor.webp" width="1280" height="1120" alt="The map layout editor listing fixtures with size and rotation controls" loading="lazy" />
           </figure>
           <ul>
@@ -424,7 +480,8 @@
 
         <section id="shortcuts">
           <h2>Keyboard shortcuts</h2>
-          <figure class="g-shot g-narrow">
+          <div class="g-keys-split">
+          <figure class="g-shot g-keys-shot">
             <img data-shot="shortcuts" src="guide/img/shortcuts.webp" width="550" height="1004" alt="The keyboard shortcut list opened from the help button" loading="lazy" />
           </figure>
           <div class="g-table-wrap">
@@ -453,12 +510,13 @@
               </tbody>
             </table>
           </div>
+          </div>
           <p>On a Mac, use <kbd>⌘</kbd> wherever this says <kbd>Ctrl</kbd>.</p>
         </section>
 
         <section id="mobile">
           <h2>Phones and tablets</h2>
-          <figure class="g-shot g-phone">
+          <figure class="g-shot g-side g-phone">
             <img data-shot="mobile" src="guide/img/mobile.webp" width="780" height="1688" alt="The planner on a phone with the Our Guild roster open over the map" loading="lazy" />
           </figure>
           <ul>
@@ -528,16 +586,32 @@
             </p>
           </details>
         </section>
-
-        <footer class="g-foot">
-          <a href="./">Open the planner</a>
-          <span>Map art © MightyLabs · <em>Where Winds Meet</em> is a trademark of its owners.</span>
-        </footer>
       </main>
     </div>
 
+    <footer class="g-foot">
+      <div class="g-foot-top">
+        <p>
+          <strong>GW Planner</strong><br />
+          A battle board for <em>Where Winds Meet</em> guild wars. Free, offline, and your plans
+          never leave your device.
+        </p>
+        <a class="g-foot-up" href="#">Back to top</a>
+      </div>
+      <a class="g-foot-cta" href="./">Open the planner</a>
+      <div class="g-foot-meta">
+        <a href="https://github.com/KrapFey/wwm-gw-planner">Source on GitHub</a>
+        <span>Map art © MightyLabs · <em>Where Winds Meet</em> is a trademark of its owners.</span>
+        <span>2026</span>
+      </div>
+    </footer>
+
     <dialog class="g-lightbox" aria-label="Screenshot">
-      <form method="dialog"><button class="g-close" aria-label="Close">✕</button></form>
+      <form method="dialog">
+        <button class="g-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></svg>
+        </button>
+      </form>
       <img alt="" />
     </dialog>
 
