@@ -3,7 +3,7 @@
 Offline-capable Guild War (GvG) strategy planner for *Where Winds Meet*. Inspired by
 [gvgstratmaker.com](https://gvgstratmaker.com/), rebuilt as an installable PWA that
 works with no internet and no backend. "Online" just means hosting the static build
-somewhere (e.g. Oracle Cloud). Strategies are shared with **Share** — a link
+somewhere (GitHub Pages). Strategies are shared with **Share** — a link
 whose `#s=…` fragment carries the whole strategy (gzipped with the browser's
 `CompressionStream`, so it never touches a server) — or by exporting/importing a
 JSON file. Opening a link adds the strategy as a new library entry.
@@ -60,10 +60,10 @@ If `esbuild` fails to run its postinstall in a locked-down npm, run once:
 
 ## Deploy
 
-Static build — `npm run build` produces `dist/`, host it anywhere. Live setup is an
-Oracle Cloud VM behind Caddy (auto-HTTPS via `sslip.io`); `deploy/deploy.sh` on the
-VM pulls `main`, builds and rsyncs `dist/`. Full runbook + `deploy/Caddyfile` in
-[`deploy/README.md`](deploy/README.md).
+GitHub Pages. Every push to `main` that passes CI (lint, unit, e2e) publishes the
+tested `dist/` via the `deploy` job in `.github/workflows/ci.yml`. One-time setup:
+repo **Settings → Pages → Source: GitHub Actions**. The build is static with
+relative paths, so `dist/` also works on any other static host.
 
 ## Planning-phase animation
 

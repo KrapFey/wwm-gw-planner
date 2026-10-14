@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // base: './' keeps asset paths relative so the built app works when hosted
-// at any sub-path (Oracle Cloud bucket, nginx sub-folder, etc.) or opened
+// at any sub-path (GitHub Pages' /wwm-gw-planner/, a sub-folder, etc.) or opened
 // straight from disk.
 export default defineConfig({
   base: './',
