@@ -1,6 +1,7 @@
 import '@fontsource-variable/geist'
 import '@fontsource-variable/geist-mono'
 import '../styles/global.css'
+import '../styles/imperial.css'
 import './guide.css'
 
 document.documentElement.classList.add('js')

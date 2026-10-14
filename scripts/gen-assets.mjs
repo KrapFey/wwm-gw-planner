@@ -23,13 +23,13 @@ for (const size of [192, 512]) {
   console.log(`icon-${size}.png`)
 }
 
-// maskable: mark shrunk into the safe zone, dark bg to the edges
+// maskable: mark shrunk into the safe zone, seal red to the edges
 const maskable = Buffer.from(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-     <rect width="512" height="512" fill="#10181a"/>
+     <rect width="512" height="512" fill="#e2503a"/>
      <g transform="translate(96.75 100) scale(13)">
-       <path d="M6 2.5v19" stroke="#c9a35f" stroke-width="2.2" stroke-linecap="round"/>
-       <path d="M7 3.5h12.5l-3.6 4.75 3.6 4.75H7z" fill="#c9a35f"/>
+       <path d="M6 2.5v19" stroke="#fbe6c6" stroke-width="2.2" stroke-linecap="round"/>
+       <path d="M7 3.5h12.5l-3.6 4.75 3.6 4.75H7z" fill="#fbe6c6"/>
      </g>
    </svg>`
 )

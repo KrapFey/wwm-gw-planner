@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import '@fontsource-variable/geist'
 import '@fontsource-variable/geist-mono'
 import './styles/global.css'
+import './styles/imperial.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

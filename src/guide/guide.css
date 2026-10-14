@@ -1127,3 +1127,110 @@ body.guide::after {
     transition: none;
   }
 }
+
+/* ============================================================
+   Imperial Night touches (see styles/imperial.css for the app)
+   ============================================================ */
+.g-brand svg {
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  color: #fbe6c6;
+  background: var(--seal);
+  border-radius: 6px;
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--seal) 45%, transparent);
+  rotate: -4deg;
+  transition: rotate 0.4s var(--spring-out);
+}
+.g-brand:hover svg {
+  rotate: 0deg;
+}
+.g-top {
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* hero: a lantern behind the sentence, the second line in moving gold */
+.g-hero {
+  position: relative;
+  isolation: isolate;
+}
+.g-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 -10%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 46% at 50% 44%, rgba(232, 176, 74, 0.16), transparent 70%),
+    radial-gradient(30% 40% at 22% 30%, rgba(88, 72, 190, 0.22), transparent 70%),
+    radial-gradient(28% 36% at 80% 64%, rgba(226, 80, 58, 0.12), transparent 70%);
+  animation: lantern 12s ease-in-out infinite alternate, ink-drift 40s ease-in-out infinite alternate;
+}
+.g-line + .g-line > span {
+  background: linear-gradient(100deg, var(--accent) 20%, #fff1cc 45%, var(--accent-2) 55%, var(--accent) 80%) 0 0 / 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: line-up 0.95s var(--reveal-ease) 0.11s both, sheen 8s ease-in-out 1.2s infinite;
+}
+
+/* lacquered gold buttons with a light sweep */
+.g-btn,
+.g-open,
+.g-play {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 30%, transparent),
+    inset 0 1px 0 rgba(255, 246, 220, 0.45);
+  transition: box-shadow 0.2s ease, scale 0.25s var(--spring-out), translate 0.25s var(--spring-out);
+}
+.g-btn::after,
+.g-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 250, 235, 0.55) 50%, transparent 70%);
+  translate: -120% 0;
+  pointer-events: none;
+}
+.g-btn:hover,
+.g-open:hover {
+  translate: 0 -1px;
+  box-shadow: 0 6px 28px color-mix(in srgb, var(--accent) 50%, transparent),
+    inset 0 1px 0 rgba(255, 246, 220, 0.5);
+}
+.g-btn:hover::after,
+.g-open:hover::after {
+  translate: 120% 0;
+  transition: translate 0.75s var(--ease-out);
+}
+
+/* the demo board sits under a lantern too */
+.g-board {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent),
+    0 24px 60px rgba(3, 4, 14, 0.6), 0 0 80px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.g-pill {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+/* screenshots catch a little gold light on hover */
+.g-shot img {
+  transition: scale 0.4s var(--reveal-ease), box-shadow 0.4s ease;
+}
+.g-shot img:hover {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 18px 50px rgba(3, 4, 14, 0.6);
+}
+.g-toc a[aria-current]::before {
+  box-shadow: 0 0 10px var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-btn:hover,
+  .g-open:hover {
+    translate: none;
+  }
+}

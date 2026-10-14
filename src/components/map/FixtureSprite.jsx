@@ -61,7 +61,7 @@ export default function FixtureSprite({ fixture, editable, playDraggable, select
           width={w + 6}
           height={h + 6}
           cornerRadius={4}
-          stroke={selected ? '#c9a35f' : 'rgba(201,163,95,0.4)'}
+          stroke={selected ? '#e8b04a' : 'rgba(232,176,74,0.4)'}
           strokeWidth={selected ? 2 : 1}
           dash={[6, 4]}
           listening={false}

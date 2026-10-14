@@ -10,7 +10,7 @@ JSON file. Opening a link adds the strategy as a new library entry.
 
 ## Stack
 
-- React + Vite, bronze-and-brass dark design system + Geist / Geist Mono (`@fontsource-variable/geist*`)
+- React + Vite, "Imperial Night" design system (ink-indigo, lantern gold, vermilion seal; motion layer in `src/styles/imperial.css`) + Geist / Geist Mono (`@fontsource-variable/geist*`)
 - Zustand (+ `zundo` for undo/redo), autosaved to `localStorage`
 - `vite-plugin-pwa` for offline install
 - Konva / react-konva for the battle map

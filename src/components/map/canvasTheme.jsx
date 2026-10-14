@@ -5,16 +5,16 @@ import { Path } from 'react-konva'
 export const CANVAS = {
   font: "'Geist Variable', 'Segoe UI', sans-serif",
   mono: "'Geist Mono Variable', ui-monospace, monospace",
-  ink: '#0b1112', // --bg
-  glass: 'rgba(11,17,18,0.92)',
-  surface: '#152022', // --surface-2
-  surface3: '#1b2729', // --surface-3
-  border: '#2d3d3f', // --border-2
-  text: '#e9e6dc', // --text
-  dim: '#9aa6a2', // --text-dim
-  faint: '#5f6d6a', // --text-faint
-  accent: '#c9a35f', // --accent
-  danger: '#f87171'
+  ink: '#0b0d18', // --bg
+  glass: 'rgba(11,13,24,0.92)',
+  surface: '#151927', // --surface-2
+  surface3: '#1c2132', // --surface-3
+  border: '#2c334b', // --border-2
+  text: '#ede6d6', // --text
+  dim: '#9b9db2', // --text-dim
+  faint: '#60647c', // --text-faint
+  accent: '#e8b04a', // --accent
+  danger: '#f26d5b'
 }
 
 // 24-unit icon paths (same drawings as components/Icons.jsx)

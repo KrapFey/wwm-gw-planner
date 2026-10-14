@@ -1,0 +1,325 @@
+/* ============================================================
+   Imperial Night — atmosphere and motion
+   Layered over global.css. Everything here animates transform /
+   opacity / background-position so it stays on the compositor.
+   Reduced motion stops it (global.css's blanket rule plus the block
+   at the end): the scene is still lit, just still.
+   ============================================================ */
+
+/* ink smoke drifting behind the whole app (the map sits above it) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 30% at 18% 22%, rgba(72, 60, 160, 0.22), transparent 70%),
+    radial-gradient(30% 26% at 82% 18%, rgba(226, 80, 58, 0.1), transparent 70%),
+    radial-gradient(42% 34% at 70% 82%, rgba(232, 176, 74, 0.09), transparent 70%),
+    radial-gradient(36% 30% at 26% 78%, rgba(40, 90, 160, 0.16), transparent 70%);
+  animation: ink-drift 48s ease-in-out infinite alternate;
+}
+@keyframes ink-drift {
+  50% {
+    translate: 4% -3%;
+    rotate: 4deg;
+    scale: 1.06;
+  }
+  100% {
+    translate: -3% 4%;
+    rotate: -3deg;
+    scale: 1.02;
+  }
+}
+
+/* rosters are smoked glass, so the drift shows through */
+.roster {
+  background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--side-accent, transparent) 12%, transparent),
+      transparent 280px
+    ),
+    color-mix(in srgb, var(--bg) 72%, transparent);
+}
+.side > header {
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+}
+
+/* the map table: a slow lantern glow and smoke under the canvas */
+.stage-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -15%;
+  pointer-events: none;
+  background:
+    radial-gradient(34% 30% at 50% 50%, rgba(232, 176, 74, 0.13), transparent 70%),
+    radial-gradient(30% 40% at 15% 30%, rgba(88, 72, 190, 0.18), transparent 70%),
+    radial-gradient(28% 36% at 85% 70%, rgba(226, 80, 58, 0.09), transparent 70%);
+  animation: lantern 14s ease-in-out infinite alternate, ink-drift 60s ease-in-out infinite alternate;
+}
+@keyframes lantern {
+  0% {
+    opacity: 0.65;
+  }
+  45% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* top bar: indigo glass with a gold brush-stroke that catches the light */
+.topbar {
+  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+}
+.topbar::after {
+  height: 2px;
+  bottom: -1px;
+  background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--accent) 70%, transparent) 30%,
+      #fff3d1 50%,
+      color-mix(in oklab, var(--accent) 70%, transparent) 70%,
+      transparent 100%
+    )
+    0 0 / 220% 100% no-repeat;
+  opacity: 0.55;
+  animation: sheen 7s ease-in-out infinite;
+}
+@keyframes sheen {
+  0% {
+    background-position: 120% 0;
+  }
+  60%,
+  100% {
+    background-position: -20% 0;
+  }
+}
+
+/* the brand flag sits on a vermilion seal */
+.brand svg {
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  color: #fbe6c6;
+  background: var(--seal);
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--seal) 60%, #000),
+    0 4px 18px color-mix(in srgb, var(--seal) 45%, transparent);
+  rotate: -4deg;
+  transition: rotate 0.4s var(--spring-out), box-shadow 0.3s ease;
+}
+.brand:hover svg {
+  rotate: 0deg;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--seal) 60%, #000),
+    0 6px 26px color-mix(in srgb, var(--seal) 65%, transparent);
+}
+.brand-name {
+  background: linear-gradient(100deg, var(--text) 40%, var(--accent-2) 50%, var(--text) 60%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sheen 9s ease-in-out 2s infinite;
+}
+
+/* primary buttons: lacquered gold with a light sweep on hover */
+button.primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: 0 2px 14px color-mix(in srgb, var(--accent) 30%, transparent),
+    inset 0 1px 0 rgba(255, 246, 220, 0.45);
+}
+button.primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 250, 235, 0.55) 50%, transparent 70%);
+  translate: -120% 0;
+  pointer-events: none;
+}
+button.primary:hover {
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--accent) 50%, transparent),
+    inset 0 1px 0 rgba(255, 246, 220, 0.5);
+}
+button.primary:hover::after {
+  translate: 120% 0;
+  transition: translate 0.75s var(--ease-out);
+}
+
+/* every control lifts a little and answers the press */
+button,
+.tb-guide {
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    scale 0.2s var(--spring-out), translate 0.25s var(--spring-out), box-shadow 0.2s ease;
+}
+button:not(:disabled):hover {
+  translate: 0 -1px;
+}
+button:not(:disabled):active {
+  translate: 0 0;
+}
+.dock-btn:hover:not(:disabled) {
+  color: var(--accent-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.dock-btn:hover:not(:disabled) svg {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 60%, transparent));
+}
+
+/* the active tool glows like a lantern */
+.ctb-indicator {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  animation: lantern-glow 3.2s ease-in-out infinite;
+}
+.dock-btn.on {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: var(--glow);
+}
+@keyframes lantern-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 65%, transparent);
+  }
+}
+
+/* floating chrome: lantern-lit glass edge */
+.tool-rail .ctb-group,
+.draw-opts,
+.view-dock,
+.phases-bar,
+.inspector,
+.layout-panel,
+.selection-bar,
+.onboarding,
+.strat-pop,
+.ctb-drop,
+.pb-vis-pop,
+.update-toast {
+  border-color: color-mix(in srgb, var(--border-2) 80%, var(--accent));
+  box-shadow: inset 0 1px 0 var(--edge-light), 0 0 0 1px rgba(3, 4, 14, 0.35), var(--shadow-2);
+}
+
+/* team cards: lift and glow in their team colour; cascade in on load */
+.squad {
+  animation-fill-mode: backwards;
+  transition: border-color 0.2s ease, box-shadow 0.3s ease, translate 0.3s var(--spring-out);
+}
+.squad:hover {
+  translate: 0 -2px;
+  border-color: color-mix(in srgb, var(--team, var(--accent)) 45%, var(--border-2));
+  box-shadow: inset 3px 0 0 var(--team, var(--border-2)),
+    0 8px 28px color-mix(in srgb, var(--team, var(--accent)) 18%, transparent);
+}
+.team-cat > .squad:nth-of-type(2) {
+  animation-delay: 0.06s;
+}
+.team-cat > .squad:nth-of-type(3) {
+  animation-delay: 0.12s;
+}
+.team-cat > .squad:nth-of-type(n + 4) {
+  animation-delay: 0.18s;
+}
+.player {
+  transition: background 0.15s ease, translate 0.2s var(--spring-out);
+}
+.player:hover {
+  translate: 3px 0;
+}
+
+/* roster header: the capacity meter shimmers, the side's dot is a beacon */
+.side-meter {
+  background: linear-gradient(
+      90deg,
+      var(--side-accent, var(--accent)) 0%,
+      #fff 50%,
+      var(--side-accent, var(--accent)) 100%
+    )
+    0 0 / 300% 100%;
+  box-shadow: 0 0 10px var(--side-accent, var(--accent));
+  animation: sheen 5s ease-in-out infinite;
+}
+.side-meter.over {
+  background: var(--danger);
+}
+.side > header .dot {
+  animation: beacon 2.6s ease-in-out infinite;
+}
+@keyframes beacon {
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--side-accent, var(--accent)) 0%, transparent),
+      0 0 12px var(--side-accent, var(--accent));
+  }
+}
+
+/* phases: the play button breathes while the plan runs */
+.pb-play {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+}
+.pb-play.on {
+  animation: play-ring 1.6s ease-out infinite;
+}
+@keyframes play-ring {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent), var(--glow);
+  }
+  to {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--accent) 0%, transparent), var(--glow);
+  }
+}
+.pb-chip.on {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: var(--glow);
+}
+
+/* toasts arrive with a gold edge */
+.toast {
+  box-shadow: inset 3px 0 0 var(--accent), inset 0 1px 0 var(--edge-light), var(--shadow-2);
+}
+.toast.error {
+  box-shadow: inset 3px 0 0 var(--danger), inset 0 1px 0 var(--edge-light), var(--shadow-2);
+}
+
+/* recording uses the seal colour */
+.phases-bar .dock-btn.on:disabled {
+  background: var(--seal);
+  border-color: var(--seal);
+}
+
+/* range thumbs glow when grabbed */
+input[type='range']:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px var(--accent), var(--glow);
+}
+
+/* scrollbars in ink */
+*::-webkit-scrollbar-thumb {
+  background: var(--surface-hi);
+  background-clip: content-box;
+}
+
+/* reduced motion: keep the light, drop the travel */
+@media (prefers-reduced-motion: reduce) {
+  /* global.css's blanket rule matches elements, not the smoke / sheen layers */
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+  button:not(:disabled):hover,
+  .squad:hover,
+  .player:hover {
+    translate: none;
+  }
+  button.primary:hover::after {
+    transition: none;
+  }
+}

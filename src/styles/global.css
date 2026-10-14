@@ -1,41 +1,44 @@
 /* ============================================================
-   WWM Guild War Planner — "war table" design system
-   Patinated bronze chrome, one polished-brass accent, and the map as
-   the hero. Ally blue / enemy rose are identity colours, never
-   decoration.
+   WWM Guild War Planner — "Imperial Night" design system
+   Midnight ink-indigo chrome, lantern-gold accent and a vermilion
+   seal, with drifting ink smoke behind the map. Ally blue / enemy
+   rose are identity colours, never decoration.
    ============================================================ */
 :root {
   color-scheme: dark;
 
-  /* surfaces (verdigris bronze, deepest first) */
-  --bg: #0b1112;
-  --surface-1: #10181a;
-  --surface-2: #152022;
-  --surface-3: #1b2729;
-  --surface-hi: #233234;
-  --border: #1f2c2e;
-  --border-2: #2d3d3f;
-  --border-hover: #3e5052;
-  --edge-light: rgba(220, 240, 228, 0.06); /* top highlight on raised glass */
+  /* surfaces (midnight ink-indigo, deepest first) */
+  --bg: #0b0d18;
+  --surface-1: #10131f;
+  --surface-2: #151927;
+  --surface-3: #1c2132;
+  --surface-hi: #252b40;
+  --border: #1f2436;
+  --border-2: #2c334b;
+  --border-hover: #414a68;
+  --edge-light: rgba(232, 214, 170, 0.08); /* lantern-lit top edge on raised glass */
 
-  /* text (paper-white on bronze) */
-  --text: #e9e6dc;
-  --text-dim: #9aa6a2;
-  --text-faint: #5f6d6a;
+  /* text (rice paper on ink) */
+  --text: #ede6d6;
+  --text-dim: #9b9db2;
+  --text-faint: #60647c;
 
-  /* accent (polished brass) — one accent; ally/enemy own blue/rose */
-  --accent: #c9a35f;
-  --accent-2: #dbb877;
+  /* accent (lantern gold) — one accent; ally/enemy own blue/rose */
+  --accent: #e8b04a;
+  --accent-2: #f5c96f;
   --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
-  --on-accent: #1a1409;
-  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent);
+  --on-accent: #1d1305;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent);
+  --glow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent);
+  /* the vermilion seal: brand mark and recording only */
+  --seal: #e2503a;
 
   /* semantic */
   --ally: #3b82f6;
   --enemy: #f43f5e;
   --ok: #34d399;
   --warn: #fbbf24;
-  --danger: #f87171;
+  --danger: #f26d5b;
 
   /* shape */
   --r-xs: 5px;
@@ -44,10 +47,10 @@
   --r-lg: 16px;
   --r-pill: 999px;
 
-  /* shadows carry the bronze hue instead of flat black */
-  --shadow-1: 0 1px 2px rgba(2, 8, 8, 0.4), 0 4px 14px rgba(2, 8, 8, 0.35);
-  --shadow-2: 0 14px 44px rgba(2, 8, 8, 0.6);
-  --glass: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  /* shadows carry the night's indigo instead of flat black */
+  --shadow-1: 0 1px 2px rgba(3, 4, 14, 0.45), 0 4px 14px rgba(3, 4, 14, 0.4);
+  --shadow-2: 0 16px 48px rgba(3, 4, 14, 0.65);
+  --glass: color-mix(in srgb, var(--surface-2) 74%, transparent);
   --glass-shadow: inset 0 1px 0 var(--edge-light), var(--shadow-2);
 
   /* motion */
@@ -106,7 +109,7 @@ body,
 }
 
 body {
-  background: radial-gradient(1100px 620px at 12% -12%, #16211f 0%, var(--bg) 58%);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font);
   font-size: 13.5px;
@@ -302,7 +305,7 @@ textarea::placeholder {
 select {
   appearance: none;
   padding-right: 26px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa6a2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b9db2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
   cursor: pointer;
@@ -1222,7 +1225,7 @@ a.ctb-drop-item {
   height: 20px;
   padding: 0;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, #fff 14%, transparent);
+  border: 2px solid color-mix(in srgb, #fff 16%, transparent);
   transition: scale 0.25s var(--spring-out), box-shadow 0.15s ease;
 }
 .swatch:hover {
@@ -1251,7 +1254,7 @@ a.ctb-drop-item {
   position: relative;
   overflow: hidden;
   min-height: 0;
-  background: radial-gradient(ellipse at center, #142020 0%, var(--bg) 75%);
+  background: radial-gradient(ellipse at center, #171b33 0%, var(--bg) 75%);
   cursor: grab;
 }
 .stage-wrap:active {
@@ -1270,7 +1273,7 @@ a.ctb-drop-item {
   inset: 0;
   z-index: var(--z-canvas-fx);
   pointer-events: none;
-  box-shadow: inset 0 0 140px rgba(2, 7, 7, 0.75);
+  box-shadow: inset 0 0 140px rgba(3, 4, 14, 0.8);
 }
 
 /* floating chrome over the canvas shares one glass treatment */
