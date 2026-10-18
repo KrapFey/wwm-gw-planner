@@ -166,11 +166,13 @@ button:not(:disabled):hover {
 button:not(:disabled):active {
   translate: 0 0;
 }
-.dock-btn:hover:not(:disabled) {
+/* gold glow for plain icons only: on gold-filled ones (active tool, play,
+   "on" toggles) a gold icon would vanish into the fill */
+.dock-btn:hover:not(:disabled, .on, .pb-play) {
   color: var(--accent-2);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }
-.dock-btn:hover:not(:disabled) svg {
+.dock-btn:hover:not(:disabled, .on, .pb-play) svg {
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 60%, transparent));
 }
 
