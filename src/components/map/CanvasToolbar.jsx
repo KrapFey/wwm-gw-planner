@@ -4,6 +4,7 @@ import {
   MARKER_KIND_LIST,
   DRAW_COLORS,
   DRAW_WIDTHS,
+  DRAW_TOOL_LABEL,
   SHAPE_TOOLS,
   SHAPE_META
 } from '../../lib/tacticalDefs.js'
@@ -249,7 +250,8 @@ export default function CanvasToolbar({
         </nav>
       )}
 
-      {!editLayout && (tool === 'pen' || tool === 'arrow' || isShapeTool) && (
+      {/* every drawing tool (pen, arrows, curve, shapes) draws with these */}
+      {!editLayout && tool in DRAW_TOOL_LABEL && (
         <div className="draw-opts" role="group" aria-label="Line style">
           {DRAW_COLORS.map((c) => (
             <button

@@ -50,6 +50,26 @@ test('draw a freehand line with the pen tool', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Select \/ pan/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
+test('a curved arrow takes the chosen colour and width', async ({ page }) => {
+  await page.keyboard.press('g')
+  const style = page.getByRole('group', { name: 'Line style' })
+  await expect(style).toBeVisible()
+  await style.locator('.swatch').nth(1).click() // red
+  await style.getByTitle('Line width L').click()
+
+  const box = await page.locator('.stage-wrap').boundingBox()
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  await page.mouse.move(cx - 80, cy)
+  await page.mouse.down()
+  await page.mouse.move(cx, cy - 50, { steps: 8 })
+  await page.mouse.move(cx + 80, cy, { steps: 8 })
+  await page.mouse.up()
+  await expect.poll(countOf(page, 'drawing')).toBe(1)
+  const curve = (await activeDoc(page)).items.find((i) => i.type === 'drawing')
+  expect(curve).toMatchObject({ tool: 'carrow', color: '#ef4444', width: 10 })
+})
+
 test('delete a team, then undo it from the toast', async ({ page }) => {
   const ally = page.locator('.roster.side-ally')
   await ally.getByRole('button', { name: 'Attack team' }).click()
